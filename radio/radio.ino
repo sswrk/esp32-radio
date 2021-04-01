@@ -4,7 +4,7 @@
 
 #define EEPROM_SIZE 2
 
-long interval = 1000;
+long interval = 250;
 long previousButtonMillis = 0;
 
 int radioStation = 0;
@@ -15,7 +15,7 @@ const int nextButton = 15;
 char ssid[] = "<SSID>";
 char pass[] = "<PASSWORD>";
 
-char *host[4] = {"centova.radios.pt", "http://wamu-1.streamguys.com", "realfm.live24.gr", "live.slovakradio.sk"};
+char *host[4] = {"centova.radios.pt", "wamu-1.streamguys.com", "realfm.live24.gr", "live.slovakradio.sk"};
 char *path[4] = {"/stream?type=http&nocache=3342", "/", "/realfm", "/Devin_256.mp3"};
 int   port[4] = {9496, 80, 80, 8000};
 
@@ -70,10 +70,11 @@ void setup () {
 
   connectToWIFI();
 
-  radioStation = readStationFromEEPROM();
+  radioStation = getLastStationFromEEPROM();
   if (radioStation < 0 || radioStation >= 4) {
     radioStation = 0;
   }
+  previousRadioStation = radioStation;
 }
 
 void loop() {
@@ -81,16 +82,16 @@ void loop() {
   if (radioStation != previousRadioStation) {
     connectToStation(radioStation);
     previousRadioStation = radioStation;
-    writeStationToEEPROM(&radioStation);
+    writeLastStationToEEPROM(radioStation);
   }
 
   if (client.available() > 0) {
     uint8_t bytesread = client.read(mp3buff, 32);
-    //        for(int i=0; i<bytesread; i++){
-    //          Serial.print(mp3buff[i]);
-    //        }
-    //        Serial.println("");
-    //        TODO: send data to audio module input
+//    for(int i=0; i<bytesread; i++){
+//      Serial.println(mp3buff[i]);
+//    }
+//    Serial.println("");
+//    TODO: send data to audio module input
   }
 }
 
@@ -118,25 +119,19 @@ void drawRadioStationName(int id) {
   Serial.println(host[id]);
 }
 
-int readStationFromEEPROM() {
-  int station;
-  byte ByteArray[2];
-  for (int x = 0; x < 2; x++)
-  {
-    ByteArray[x] = EEPROM.read(x);
-  }
-  memcpy(&station, ByteArray, 2);
-  Serial.println("readFrequencyFromEEPROM(): " + String(station));
-  return station;
+int getLastStationFromEEPROM() {
+  byte byte1 = EEPROM.read(0);
+  byte byte2 = EEPROM.read(1);
+  int id = (byte1 << 8) + byte2;
+  Serial.println("Got station ID from EEPROM: " + String(id));
+  return id;
 }
 
-void writeStationToEEPROM(int *freq) {
-  byte ByteArray[2];
-  memcpy(ByteArray, freq, 2);
-  for (int x = 0; x < 2; x++)
-  {
-    EEPROM.write(x, ByteArray[x]);
-  }
+void writeLastStationToEEPROM(int id) {
+  byte byte1 = id >> 8;
+  byte byte2 = id & 0xFF;
+  EEPROM.write(0, byte1);
+  EEPROM.write(1, byte2);
   EEPROM.commit();
-  Serial.println("writeFrequencyToEEPROM(): " + String(radioStation));
+  Serial.println("Wrote station ID to EEPROM: " + String(radioStation));
 }
