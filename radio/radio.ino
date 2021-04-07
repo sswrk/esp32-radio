@@ -5,6 +5,7 @@
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
 #include "SPIFFS.h"
+#include "Vector.h"
 
 #define EEPROM_SIZE 2
 
@@ -20,11 +21,14 @@ const int nextButton = 15;
 char ssid[] = "<SSID>";
 char pass[] = "<PASSWORD>";
 
-String hosts[100] = {"centova.radios.pt", "wamu-1.streamguys.com", "realfm.live24.gr", "live.slovakradio.sk"};
-String paths[100] = {"/stream?type=http&nocache=3342", "/", "/realfm", "/Devin_256.mp3"};
-int   ports[100] = {9496, 80, 80, 8000};
+struct radioStationInfo{
+  String host;
+  String path;
+  int port; 
+};
 
-int availableStations = 3;
+radioStationInfo availableStationsArray[100];
+Vector<radioStationInfo> availableStations(availableStationsArray);
 
 AsyncWebServer server(80);
 
@@ -38,20 +42,47 @@ void notFound(AsyncWebServerRequest *request){
 }
 
 bool addRadioStation(const char* host, const char* path, int port){
-  if(host==NULL || path==NULL || port==NULL){
+  if(host==NULL || path==NULL || port==NULL || availableStations.full()){
     return false;
   }
-  hosts[availableStations] = String(host);
-  paths[availableStations] = String(path);
-  ports[availableStations] = port;
-  availableStations++;
+  radioStationInfo newStation;
+  newStation.host = String(host);
+  newStation.path = String(path);
+  newStation.port = port;
+  availableStations.push_back(newStation);
   
   Serial.println("Added radio station! Available radio stations: ");
-  for(int i=0; i<availableStations; i++){
-    Serial.print(hosts[i]);
+  for(int i=0; i<availableStations.size(); i++){
+    Serial.print(availableStations.at(i).host);
     Serial.print(":");
-    Serial.print(ports[i]);
-    Serial.print(paths[i]);
+    Serial.print(availableStations.at(i).port);
+    Serial.print(availableStations.at(i).path);
+    Serial.println("");
+  }
+  return true;
+}
+
+bool deleteRadioStation(int index){
+  if(index==NULL || availableStations.size() < index+1){
+    return false;
+  }
+  availableStations.remove(index);
+  if(radioStation == index){
+    if(availableStations.size() < index-1){
+      connectToStation(index);
+      previousRadioStation = radioStation;
+      writeLastStationToEEPROM(radioStation);
+    }
+    else if(availableStations.size() > 0){
+      radioStation--;
+    }
+  }
+  Serial.println("Removed radio station! Available radio stations: ");
+  for(int i=0; i<availableStations.size(); i++){
+    Serial.print(availableStations.at(i).host);
+    Serial.print(":");
+    Serial.print(availableStations.at(i).port);
+    Serial.print(availableStations.at(i).path);
     Serial.println("");
   }
   return true;
@@ -68,7 +99,7 @@ void IRAM_ATTR previousButtonInterrupt() {
     if (radioStation > 0)
       radioStation--;
     else
-      radioStation = availableStations - 1;
+      radioStation = availableStations.size() - 1;
 
     previousButtonMillis = currentMillis;
   }
@@ -81,7 +112,7 @@ void IRAM_ATTR nextButtonInterrupt() {
 
     Serial.println("NEXT");
 
-    if (radioStation < availableStations - 1)
+    if (radioStation < availableStations.size() - 1)
       radioStation++;
     else
       radioStation = 0;
@@ -133,13 +164,29 @@ void setup () {
       }
   });
 
+  server.on("/stations", HTTP_DELETE, [](AsyncWebServerRequest *request){
+    }, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+      DynamicJsonDocument doc(1024);
+      DeserializationError error = deserializeJson(doc, (const char*)data);
+      bool success = false;
+      if(!error) {
+        int index = doc["index"];
+        success = deleteRadioStation(index);
+      }
+      if(success){
+        request->send(200, "text/plain", "Radio station deleted");
+      } else {
+        request->send(400, "text/plain", "Wrong parameters");
+      }
+  });
+
   server.onNotFound(notFound);
 
   server.begin();
 
   //set radio station
   radioStation = getLastStationFromEEPROM();
-  if (radioStation < 0 || radioStation >= availableStations) {
+  if (radioStation < 0 || radioStation >= availableStations.size()) {
     radioStation = 0;
   }
   previousRadioStation = radioStation;
@@ -147,7 +194,7 @@ void setup () {
 
 void loop() {
 
-  if (radioStation != previousRadioStation || (connectedToStation==false && availableStations>0)) {
+  if (radioStation != previousRadioStation || (connectedToStation==false && availableStations.size()>0)) {
     connectToStation(radioStation);
     previousRadioStation = radioStation;
     writeLastStationToEEPROM(radioStation);
@@ -166,12 +213,12 @@ void loop() {
 void connectToStation(int stationId ) {
   Serial.println("Connecting to radio station...");
   char buf[100];
-  hosts[stationId].toCharArray(buf, 100);
-  if (client.connect(buf, ports[stationId])) {
+  availableStations.at(stationId).host.toCharArray(buf, 100);
+  if (client.connect(buf, availableStations.at(stationId).port)) {
     Serial.println("Connected to radio station!");
   }
-  client.print(String("GET ") + paths[stationId] + " HTTP/1.1\r\n" +
-               "Host: " + hosts[stationId] + "\r\n" +
+  client.print(String("GET ") + availableStations.at(stationId).path + " HTTP/1.1\r\n" +
+               "Host: " + availableStations.at(stationId).host + "\r\n" +
                "Connection: close\r\n\r\n");
   drawRadioStationName(stationId);
   connectedToStation = true;
@@ -189,7 +236,7 @@ void connectToWIFI() {
 }
 
 void drawRadioStationName(int id) {
-  Serial.println(hosts[id]);
+  Serial.println(availableStations.at(id).host);
 }
 
 int getLastStationFromEEPROM() {
