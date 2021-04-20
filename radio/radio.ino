@@ -6,41 +6,86 @@
 #include "ArduinoJson.h"
 #include "SPIFFS.h"
 #include "Vector.h"
+#include <ESPVS1003.h>
+#include <SPI.h>
 
 #define EEPROM_SIZE 2
 
-long interval = 250;
+
+/*----------------------------------
+           PIN MAPPINGS
+----------------------------------*/
+//buttons
+const int previousButton = 13; //D13
+const int nextButton = 15; //D15
+const int addOrRemoveFavouriteButton = 18; //D18
+const int switchFavouritesAllButton = 5; //D5
+const int volumeUpButton = 23; //D23
+const int volumeDownButton = 22; //D22
+//VS1003
+uint8_t csVS = 27; //D27
+uint8_t dcsVS = 0; //EN
+uint8_t dreqVS = 25; //D25
+uint8_t rsetVS = 26; //D26
+uint8_t sckVS = 33; //D33
+uint8_t misoVS = 14; //D14
+uint8_t mosiVS = 12; //D12
+
+
+/*----------------------------------
+         BUTTONS SETTINGS
+----------------------------------*/
+long buttonIntervalMillis = 250;
 long previousButtonMillis = 0;
 
-int radioStation = 0;
-bool connectedToStation = false;
-int previousRadioStation = -1;
-const int previousButton = 13;
-const int nextButton = 15;
 
-char ssid[] = "<SSID>";
-char pass[] = "<PASSWORD>";
-
+/*----------------------------------
+         RADIO DATA LOGIC
+----------------------------------*/
 struct radioStationInfo{
   String host;
   String path;
   int port; 
 };
 
+int radioStation = 0;
+bool connectedToStation = false;
+int previousRadioStation = -1;
+
 radioStationInfo availableStationsArray[100];
 Vector<radioStationInfo> availableStations(availableStationsArray);
 
+
+/*----------------------------------
+          VS1003 SETTINGS
+----------------------------------*/
+uint8_t buff[128];
+VS1003 player(csVS, dcsVS, dreqVS, rsetVS);
+uint8_t volume = 0x0;
+
+/*----------------------------------
+           WIFI SETTINGS
+----------------------------------*/
+char ssid[] = "<SSID>";
+char pass[] = "<PASSWORD>";
+
+
+/*----------------------------------
+        WEB SERVER SETTINGS
+----------------------------------*/
 AsyncWebServer server(80);
 
 int status = WL_IDLE_STATUS;
 WiFiClient  client;
-uint8_t mp3buff[32];
 
-//server methods
 void notFound(AsyncWebServerRequest *request){
   request->send(404, "application/json", "{\"message\":\"Not found\"}");
 }
 
+
+/*----------------------------------
+       RADIO LOGIC FUNCTIONS
+----------------------------------*/
 bool addRadioStation(const char* host, const char* path, int port){
   if(host==NULL || path==NULL || port==NULL || availableStations.full()){
     return false;
@@ -88,11 +133,25 @@ bool deleteRadioStation(int index){
   return true;
 }
 
-//buttons methods
+bool addToFavourites(int index){
+  return true; //TODO
+}
+
+bool removeFromFavourites(int index){
+  return true; //TODO
+}
+
+void drawRadioStationName(int id) {
+  Serial.println(availableStations.at(id).host);
+}
+
+/*----------------------------------
+         BUTTON FUNCTIONS
+----------------------------------*/
 void IRAM_ATTR previousButtonInterrupt() {
 
   unsigned long currentMillis = millis();
-  if (currentMillis - previousButtonMillis > interval) {
+  if (currentMillis - previousButtonMillis > buttonIntervalMillis) {
 
     Serial.println("PREVIOUS");
 
@@ -108,7 +167,7 @@ void IRAM_ATTR previousButtonInterrupt() {
 void IRAM_ATTR nextButtonInterrupt() {
 
   unsigned long currentMillis = millis();
-  if (currentMillis - previousButtonMillis > interval) {
+  if (currentMillis - previousButtonMillis > buttonIntervalMillis) {
 
     Serial.println("NEXT");
 
@@ -121,31 +180,92 @@ void IRAM_ATTR nextButtonInterrupt() {
   }
 }
 
+/*----------------------------------
+    RADIO CONNECTION FUNCTIONS
+----------------------------------*/
+void connectToStation(int stationId ) {
+  Serial.println("Connecting to radio station...");
+  char buf[100];
+  availableStations.at(stationId).host.toCharArray(buf, 100);
+  if (client.connect(buf, availableStations.at(stationId).port)) {
+    Serial.println("Connected to radio station!");
+  }
+  client.print(String("GET ") + availableStations.at(stationId).path + " HTTP/1.1\r\n" +
+               "Host: " + availableStations.at(stationId).host + "\r\n" +
+               "Connection: close\r\n\r\n");
+  drawRadioStationName(stationId);
+  connectedToStation = true;
+  player.startSong();
+}
+
+void connectToWIFI() {
+  WiFi.begin(ssid, pass);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.println("Connected to WiFi!");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+}
+
+
+/*----------------------------------
+         EEPROM FUNCTIONS
+----------------------------------*/
+int getLastStationFromEEPROM() {
+  byte byte1 = EEPROM.read(0);
+  byte byte2 = EEPROM.read(1);
+  int id = (byte1 << 8) + byte2;
+  Serial.println("Got station ID from EEPROM: " + String(id));
+  return id;
+}
+
+void writeLastStationToEEPROM(int id) {
+  byte byte1 = id >> 8;
+  byte byte2 = id & 0xFF;
+  EEPROM.write(0, byte1);
+  EEPROM.write(1, byte2);
+  EEPROM.commit();
+  Serial.println("Wrote station ID to EEPROM: " + String(radioStation));
+}
+
+
 void setup () {
 
   Serial.begin(9600);
   delay(500);
 
+
+  //EEPROM init
   EEPROM.begin(EEPROM_SIZE);
 
+
+  //BUTTONS init
   pinMode(previousButton, INPUT_PULLUP);
   pinMode(nextButton, INPUT_PULLUP);
 
   attachInterrupt(digitalPinToInterrupt(previousButton), previousButtonInterrupt, RISING);
   attachInterrupt(digitalPinToInterrupt(nextButton), nextButtonInterrupt, RISING);
 
+  
+  //SPIFFS init
   if(!SPIFFS.begin(true)){
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
   }
 
+  //WIFI init
   connectToWIFI();
 
-  //server requests handling
+  
+  //SERVER requests handling
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/index.html", "text/html");
   });
-
+  server.on("/stations", HTTP_GET, [](AsyncWebServerRequest *request){
+    //TODO
+  });
   server.on("/stations", HTTP_POST, [](AsyncWebServerRequest *request){
     }, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
       DynamicJsonDocument doc(1024);
@@ -163,7 +283,6 @@ void setup () {
         request->send(400, "text/plain", "Wrong parameters");
       }
   });
-
   server.on("/stations", HTTP_DELETE, [](AsyncWebServerRequest *request){
     }, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
       DynamicJsonDocument doc(1024);
@@ -179,12 +298,53 @@ void setup () {
         request->send(400, "text/plain", "Wrong parameters");
       }
   });
-
+  server.on("/stations/favoutrites", HTTP_POST, [](AsyncWebServerRequest *request){
+    }, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+      DynamicJsonDocument doc(1024);
+      DeserializationError error = deserializeJson(doc, (const char*)data);
+      bool success = false;
+      if(!error) {
+        int index = doc["index"];
+        success = addToFavourites(index);
+      }
+      if(success){
+        request->send(200, "text/plain", "Radio station deleted");
+      } else {
+        request->send(400, "text/plain", "Wrong parameters");
+      }
+  });
+  server.on("/stations/favourites", HTTP_DELETE, [](AsyncWebServerRequest *request){
+    }, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+      DynamicJsonDocument doc(1024);
+      DeserializationError error = deserializeJson(doc, (const char*)data);
+      bool success = false;
+      if(!error) {
+        int index = doc["index"];
+        success = removeFromFavourites(index);
+      }
+      if(success){
+        request->send(200, "text/plain", "Radio station deleted");
+      } else {
+        request->send(400, "text/plain", "Wrong parameters");
+      }
+  });
   server.onNotFound(notFound);
 
-  server.begin();
 
-  //set radio station
+  //SERVER init
+  server.begin();
+  Serial.println("Server started!");
+
+
+  //VS1003 init
+  SPI.begin(sckVS, misoVS, mosiVS);
+  Serial.println("SPI set up");
+  player.begin();
+  player.setVolume(volume);
+  Serial.println("VS1003 set up");
+
+
+  //RADIO init
   radioStation = getLastStationFromEEPROM();
   if (radioStation < 0 || radioStation >= availableStations.size()) {
     radioStation = 0;
@@ -200,58 +360,9 @@ void loop() {
     writeLastStationToEEPROM(radioStation);
   }
 
-  if (client.available() > 0) {
-    uint8_t bytesread = client.read(mp3buff, 32);
-//    for(int i=0; i<bytesread; i++){
-//      Serial.println(mp3buff[i]);
-//    }
-//    Serial.println("");
-//    TODO: send data to audio module input
+  int ssize = client.available();
+  if (ssize > 0) {
+    int c = client.readBytes(buff, ssize > sizeof(buff) ? sizeof(buff) : ssize);
+    player.playChunk(buff, c);
   }
-}
-
-void connectToStation(int stationId ) {
-  Serial.println("Connecting to radio station...");
-  char buf[100];
-  availableStations.at(stationId).host.toCharArray(buf, 100);
-  if (client.connect(buf, availableStations.at(stationId).port)) {
-    Serial.println("Connected to radio station!");
-  }
-  client.print(String("GET ") + availableStations.at(stationId).path + " HTTP/1.1\r\n" +
-               "Host: " + availableStations.at(stationId).host + "\r\n" +
-               "Connection: close\r\n\r\n");
-  drawRadioStationName(stationId);
-  connectedToStation = true;
-}
-
-void connectToWIFI() {
-  WiFi.begin(ssid, pass);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi...");
-  }
-  Serial.println("Connected to WiFi!");
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.localIP());
-}
-
-void drawRadioStationName(int id) {
-  Serial.println(availableStations.at(id).host);
-}
-
-int getLastStationFromEEPROM() {
-  byte byte1 = EEPROM.read(0);
-  byte byte2 = EEPROM.read(1);
-  int id = (byte1 << 8) + byte2;
-  Serial.println("Got station ID from EEPROM: " + String(id));
-  return id;
-}
-
-void writeLastStationToEEPROM(int id) {
-  byte byte1 = id >> 8;
-  byte byte2 = id & 0xFF;
-  EEPROM.write(0, byte1);
-  EEPROM.write(1, byte2);
-  EEPROM.commit();
-  Serial.println("Wrote station ID to EEPROM: " + String(radioStation));
 }
