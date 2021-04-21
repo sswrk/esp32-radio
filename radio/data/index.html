@@ -1,9 +1,24 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>ESP32 radio</title>
-    </head>
-    <body>
-        <p>ESP32 radio web server</p>
-    </body>
+
+<head>
+    <title>ESP32 radio</title>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+    <p>ESP32 radio web server</p>
+    <div class="current-station-section">
+        <h2>Currently selected station: <span id="current-station"></span></h2>
+        <div class="current-station-action">
+            <button class="prev-button" onclick="setPrevStation()"></button>
+            <button class="play-button" onclick="togglePlayState()"></button>
+            <button class="next-button" onclick="setNextStation()"></button>
+        </div>
+
+    </div>
+</body>
+<script src="script.js"></script>
+
 </html>
