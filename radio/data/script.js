@@ -1,4 +1,5 @@
 let currentStation = '302.1';
+
 var xmlhttp = new XMLHttpRequest();
 
 function updateCurrentStation(newStation) {

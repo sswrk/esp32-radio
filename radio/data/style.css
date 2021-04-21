@@ -28,3 +28,19 @@
 
     background-image: url('./img/play.svg')
 }
+
+ol {
+    list-style-type: none;
+    counter-reset: li;
+}
+
+li {
+    font-size: 2rem;
+}
+
+li:before {
+    counter-increment: li;
+    content: counter(li, decimal-leading-zero);
+    color: red;
+    margin-right: 0.25em;
+}
