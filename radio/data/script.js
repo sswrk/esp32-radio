@@ -17,7 +17,7 @@ async function setPrevStation() {
             updateCurrentStation(this.responseText)
         }
     }
-    xmlhttp.open("GET", "192.168.1.24/station/prev", true);
+    xmlhttp.open("GET", "/station/prev", true);
     xmlhttp.send()
 }
 

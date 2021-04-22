@@ -23,13 +23,13 @@ const int switchFavouritesAllButton = 5; //D5
 const int volumeUpButton = 23; //D23
 const int volumeDownButton = 22; //D22
 //VS1003
-uint8_t csVS = 27; //D27
-uint8_t dcsVS = 0; //EN
-uint8_t dreqVS = 25; //D25
-uint8_t rsetVS = 26; //D26
-uint8_t sckVS = 33; //D33
-uint8_t misoVS = 14; //D14
-uint8_t mosiVS = 12; //D12
+uint8_t csVS = 32; //D32
+uint8_t dcsVS = 33; //D33
+uint8_t dreqVS = 35; //D35
+uint8_t rsetVS = 3; //EN
+//uint8_t sckVS = 18; //D18
+//uint8_t misoVS = 19; //D19
+//uint8_t mosiVS = 23; //D23
 
 
 /*----------------------------------
@@ -59,9 +59,9 @@ Vector<radioStationInfo> availableStations(availableStationsArray);
 /*----------------------------------
           VS1003 SETTINGS
 ----------------------------------*/
-uint8_t buff[128];
+uint8_t buff[32];
 VS1003 player(csVS, dcsVS, dreqVS, rsetVS);
-uint8_t volume = 0x0;
+uint8_t volume = 100;
 
 /*----------------------------------
            WIFI SETTINGS
@@ -233,7 +233,7 @@ void writeLastStationToEEPROM(int id) {
 
 void setup () {
 
-  Serial.begin(9600);
+  Serial.begin(115200);
   delay(500);
 
 
@@ -263,8 +263,26 @@ void setup () {
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/index.html", "text/html");
   });
+  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/style.css", "text/css");
+  });
+  server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/script.js", "text/javascript");
+  });
+  server.on("/img/next.svg", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/img/next.svg", "image/svg+xml");
+  });
+  server.on("/img/play.svg", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/img/play.svg", "image/svg+xml");
+  });
+  server.on("/img/previous.svg", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/img/previous.svg", "image/svg+xml");
+  });
   server.on("/stations", HTTP_GET, [](AsyncWebServerRequest *request){
     //TODO
+  });
+  server.on("/station/prev", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", "dziala :)");
   });
   server.on("/stations", HTTP_POST, [](AsyncWebServerRequest *request){
     }, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
@@ -337,7 +355,8 @@ void setup () {
 
 
   //VS1003 init
-  SPI.begin(sckVS, misoVS, mosiVS);
+  SPI.begin();
+  //SPI.begin(sckVS, misoVS, mosiVS);
   Serial.println("SPI set up");
   player.begin();
   player.setVolume(volume);
