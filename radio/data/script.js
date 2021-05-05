@@ -27,7 +27,7 @@ function addStationToFavorites(id) {
             this.savedStationsArr.find((s) => s.id === id).isFavourite = true;
         }
     }
-    xmlhttp.open("POST", "/stations", true);
+    xmlhttp.open("POST", "/stations/favourites", true);
     xmlhttp.send('id=' + id);
 }
 
