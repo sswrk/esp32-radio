@@ -43,9 +43,12 @@ long previousButtonMillis = 0;
          RADIO DATA LOGIC
 ----------------------------------*/
 struct radioStationInfo{
+  int id;
   String host;
   String path;
-  int port; 
+  String name;
+  int port;
+  bool isFavourite;
 };
 
 int radioStation = 0;
@@ -53,7 +56,10 @@ bool connectedToStation = false;
 int previousRadioStation = -1;
 
 radioStationInfo availableStationsArray[100];
+bool takenIds[100] = {false};
 Vector<radioStationInfo> availableStations(availableStationsArray);
+
+long nextId = 0;
 
 
 /*----------------------------------
@@ -63,11 +69,14 @@ uint8_t buff[32];
 VS1003 player(csVS, dcsVS, dreqVS, rsetVS);
 uint8_t volume = 100;
 
+
 /*----------------------------------
            WIFI SETTINGS
 ----------------------------------*/
-char ssid[] = "<SSID>";
-char pass[] = "<PASSWORD>";
+//char ssid[] = 
+//char pass[] = 
+char ssid[] = 
+char pass[] =
 
 
 /*----------------------------------
@@ -86,35 +95,63 @@ void notFound(AsyncWebServerRequest *request){
 /*----------------------------------
        RADIO LOGIC FUNCTIONS
 ----------------------------------*/
-bool addRadioStation(const char* host, const char* path, int port){
-  if(host==NULL || path==NULL || port==NULL || availableStations.full()){
+void updateNextId(){
+  if(availableStations.size()==100){
+    nextId = NULL;
+    return;
+  }
+  for(int i=0; i<100; i++){
+    if(takenIds[i] == false){
+      nextId = i;
+      return;
+    }
+  }
+}
+
+bool addRadioStation(const char* host, const char* path, const char* name, int port){
+  if(host==NULL || path==NULL || port==NULL || name==NULL || availableStations.full()){
     return false;
   }
   radioStationInfo newStation;
+  newStation.id = nextId;
+  takenIds[nextId] = true;
   newStation.host = String(host);
   newStation.path = String(path);
   newStation.port = port;
+  newStation.isFavourite = false;
+  newStation.name = String(name);
   availableStations.push_back(newStation);
   
   Serial.println("Added radio station! Available radio stations: ");
   for(int i=0; i<availableStations.size(); i++){
+    Serial.print(availableStations.at(i).name);
+    Serial.print(availableStations.at(i).id);
+    Serial.print(": ");
     Serial.print(availableStations.at(i).host);
     Serial.print(":");
     Serial.print(availableStations.at(i).port);
     Serial.print(availableStations.at(i).path);
     Serial.println("");
   }
+  updateNextId();
   return true;
 }
 
 bool deleteRadioStation(int index){
-  if(index==NULL || availableStations.size() < index+1){
+  if(index==NULL){
     return false;
   }
-  availableStations.remove(index);
-  if(radioStation == index){
-    if(availableStations.size() < index-1){
-      connectToStation(index);
+  int i = 0;
+  while(i<availableStations.size() && availableStations.at(i).id != index){
+    i++;
+  }
+  if(i==availableStations.size()){
+    return false;
+  }
+  availableStations.remove(i);
+  if(radioStation == i){
+    if(availableStations.size() < i-1){
+      connectToStation(i);
       previousRadioStation = radioStation;
       writeLastStationToEEPROM(radioStation);
     }
@@ -123,22 +160,61 @@ bool deleteRadioStation(int index){
     }
   }
   Serial.println("Removed radio station! Available radio stations: ");
-  for(int i=0; i<availableStations.size(); i++){
-    Serial.print(availableStations.at(i).host);
+  for(int j=0; i<availableStations.size(); j++){
+    Serial.print(availableStations.at(j).host);
     Serial.print(":");
-    Serial.print(availableStations.at(i).port);
-    Serial.print(availableStations.at(i).path);
+    Serial.print(availableStations.at(j).port);
+    Serial.print(availableStations.at(j).path);
     Serial.println("");
   }
+  takenIds[index] = false;
   return true;
 }
 
 bool addToFavourites(int index){
-  return true; //TODO
+  if(index == NULL){
+    return false;
+  }
+  int i=0;
+  while(i<availableStations.size() && availableStations.at(i).id != index){
+    i++;
+  }
+  if(i==availableStations.size()){
+    return false;
+  }
+  availableStations.at(i).isFavourite = true;
+  Serial.println("ADDED TO FAVS");
+  return true;
 }
 
 bool removeFromFavourites(int index){
-  return true; //TODO
+  if(index == NULL){
+    return false;
+  }
+  int i=0;
+  while(i<availableStations.size() && availableStations.at(i).id != index){
+    i++;
+  }
+  if(i==availableStations.size()){
+    return false;
+  }
+  availableStations.at(i).isFavourite = false;
+  return true;
+}
+
+bool switchFavourites(int index){
+  if(index == NULL){
+    return false;
+  }
+  int i=0;
+  while(i<availableStations.size() && availableStations.at(i).id != index){
+    i++;
+  }
+  if(i==availableStations.size()){
+    return false;
+  }
+  availableStations.at(i).isFavourite = !availableStations.at(i).isFavourite;
+  return true;
 }
 
 void drawRadioStationName(int id) {
@@ -175,6 +251,19 @@ void IRAM_ATTR nextButtonInterrupt() {
       radioStation++;
     else
       radioStation = 0;
+
+    previousButtonMillis = currentMillis;
+  }
+}
+
+void IRAM_ATTR addOrRemoveFavouriteButtonInterrupt() {
+
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousButtonMillis > buttonIntervalMillis) {
+
+    Serial.println("ADD OR REMOVE FAVOURITE");
+
+    switchFavourites(radioStation);
 
     previousButtonMillis = currentMillis;
   }
@@ -244,9 +333,11 @@ void setup () {
   //BUTTONS init
   pinMode(previousButton, INPUT_PULLUP);
   pinMode(nextButton, INPUT_PULLUP);
+  pinMode(addOrRemoveFavouriteButton, INPUT_PULLUP);
 
   attachInterrupt(digitalPinToInterrupt(previousButton), previousButtonInterrupt, RISING);
   attachInterrupt(digitalPinToInterrupt(nextButton), nextButtonInterrupt, RISING);
+  attachInterrupt(digitalPinToInterrupt(addOrRemoveFavouriteButton), addOrRemoveFavouriteButtonInterrupt, RISING);
 
   
   //SPIFFS init
@@ -263,8 +354,8 @@ void setup () {
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/index.html", "text/html");
   });
-  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/style.css", "text/css");
+  server.on("/styles.scss", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/styles.scss", "text/css");
   });
   server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/script.js", "text/javascript");
@@ -292,8 +383,9 @@ void setup () {
       if(!error) {
         const char* host = doc["host"];
         const char* path = doc["path"];
+        const char* name = doc["name"];
         int port = doc["port"];
-        success = addRadioStation(host, path, port);
+        success = addRadioStation(host, path, name, port);
       }
       if(success){
         request->send(200, "text/plain", "Radio station added");
