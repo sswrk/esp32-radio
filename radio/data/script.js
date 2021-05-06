@@ -1,16 +1,28 @@
 let favouritesStationsArr = [];
 let savedStationsArr = [
     {
-        id: 32, isFavourite: false, name: 'Andrzejska'
+        id: 32, isFavourite: true, name: 'Andrzejska'
     },
     {
         id: 31, isFavourite: false, name: 'Mother'
     },
     {
-        id: 30, isFavourite: false, name: 'Father'
+        id: 30, isFavourite: true, name: 'Father'
     },
     {
         id: 29, isFavourite: false, name: 'Sister'
+    },
+    {
+        id: 28, isFavourite: true, name: 'Pop'
+    },
+    {
+        id: 27, isFavourite: false, name: 'Lo-fi'
+    },
+    {
+        id: 26, isFavourite: true, name: 'Rock'
+    },
+    {
+        id: 25, isFavourite: true, name: 'Drum and Bass'
     }
 ];
 let currentStation = savedStationsArr[0];
@@ -22,6 +34,7 @@ async function fetchStations() {
         if (this.readyState === 4 && this.status === 200) {
             savedStationsArr = JSON.parse(this.responseText);
             currentStation = savedStationsArr[0];
+            favouritesStationsArr = savedStationsArr.filter(s => s.isFavourite);
             initIsFavourite();
         }
     }
@@ -138,19 +151,34 @@ function addStationToSaved() {
 }
 
 function addStationsToDOM() {
+    savedStationsArr.forEach((s) => {
+        const newChild = document.createElement('a');
+        $(newChild).html(s.name).addClass('list-group-item')
+            .addClass(' list-group-item-action')
+        document.getElementById('#saved-stations').appendChild(newChild);
+    })
+}
 
-    // TODO: finish dynamic stations selection and showing
-    // const savedStationsList = $('#saved-stations');
-    // savedStationsArr.forEach((s) => {
-    //     const newChild = $("a").append(s.name).addClass('list-group-item')
-    //         .addClass(' list-group-item-action');
-    //     savedStationsList.append(newChild);
-    // })
+function updateStationsDOM() {
+    addStationsToDOM();
+    addFavouriteStationsToDOM();
+}
+
+
+function addFavouriteStationsToDOM() {
+    favouritesStationsArr = savedStationsArr.filter(s => s.isFavourite);
+
+    favouritesStationsArr.forEach((s) => {
+        const newChild = document.createElement('a');
+        $(newChild).html(s.name).addClass('list-group-item')
+            .addClass(' list-group-item-action')
+        document.getElementById('#favourites-stations').appendChild(newChild);
+    });
 }
 
 function executeLoop() {
     // fetchStations();
-    addStationsToDOM();
+    updateStationsDOM()
     initIsFavourite();
     updateCurrentStation(currentStation);
 }
