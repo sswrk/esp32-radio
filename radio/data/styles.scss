@@ -11,9 +11,10 @@
   margin-bottom: 7px;
 }
 
-.current-station p {
-  margin-bottom: 0;
+.current-station h1 {
+  margin-bottom: 3px;
   margin-left: 3px;
+
 }
 
 .favourites-stations {
@@ -32,8 +33,8 @@
 }
 
 .add-station button {
-  display:flex;
-  margin:10px auto;
+  display: flex;
+  margin: 10px auto;
 }
 
 
@@ -48,4 +49,8 @@
 
 .action-buttons button.manipulate {
   width: 90px;
+}
+
+.action-buttons button.play-button {
+  width: 70px;
 }
