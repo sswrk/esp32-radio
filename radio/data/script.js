@@ -1,6 +1,9 @@
 let favouritesStationsArr = [];
 let savedStationsArr = [
     {
+        id:1, isFavourite: false, name: 'hej'
+    },
+    {
         id: 32, isFavourite: true, name: 'Andrzejska'
     },
     {
@@ -128,6 +131,7 @@ function makeLouder() {
 
 function addStationToSaved() {
     xmlhttp.onreadystatechange = function () {
+        console.log(this.status)
         if (this.readyState === 4 && this.status === 200) {
             savedStationsArr.push(JSON.parse(this.responseText));
             $('#name').html('');
@@ -141,13 +145,14 @@ function addStationToSaved() {
         }
     }
     const formData = new FormData();
-    formData.append('name', $('#name').value);
-    formData.append('host', $('#host').value);
-    formData.append('port', $('#port').value);
-    formData.append('path', $('#path').value);
+    formData.append('name', $('#name').val());
+    formData.append('host', $('#host').val());
+    formData.append('port', $('#port').val());
+    formData.append('path', $('#path').val());
 
     xmlhttp.open("POST", "/stations", true);
-    xmlhttp.send(formData)
+    xmlhttp.setRequestHeader("Content-Type", "multipart/form-data");
+    xmlhttp.send(formData);
 }
 
 function addStationsToDOM() {

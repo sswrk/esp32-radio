@@ -73,10 +73,8 @@ uint8_t volume = 100;
 /*----------------------------------
            WIFI SETTINGS
 ----------------------------------*/
-//char ssid[] = 
-//char pass[] = 
-char ssid[] = 
-char pass[] =
+char ssid[] = "<SSID>";
+char pass[] = "<PASS>";
 
 
 /*----------------------------------
@@ -138,9 +136,6 @@ bool addRadioStation(const char* host, const char* path, const char* name, int p
 }
 
 bool deleteRadioStation(int index){
-  if(index==NULL){
-    return false;
-  }
   int i = 0;
   while(i<availableStations.size() && availableStations.at(i).id != index){
     i++;
@@ -150,17 +145,20 @@ bool deleteRadioStation(int index){
   }
   availableStations.remove(i);
   if(radioStation == i){
-    if(availableStations.size() < i-1){
-      connectToStation(i);
+    if(availableStations.size() > 0 && availableStations.size() != i+1){
+      connectToStation(radioStation);
       previousRadioStation = radioStation;
       writeLastStationToEEPROM(radioStation);
     }
     else if(availableStations.size() > 0){
       radioStation--;
+      connectToStation(radioStation);
+      previousRadioStation = radioStation;
+      writeLastStationToEEPROM(radioStation);
     }
   }
   Serial.println("Removed radio station! Available radio stations: ");
-  for(int j=0; i<availableStations.size(); j++){
+  for(int j=0; j<availableStations.size(); j++){
     Serial.print(availableStations.at(j).host);
     Serial.print(":");
     Serial.print(availableStations.at(j).port);
@@ -370,10 +368,19 @@ void setup () {
     request->send(SPIFFS, "/img/previous.svg", "image/svg+xml");
   });
   server.on("/stations", HTTP_GET, [](AsyncWebServerRequest *request){
-    //TODO
-  });
-  server.on("/station/prev", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", "dziala :)");
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
+    DynamicJsonDocument root(1024*100);
+    for(int i=0; i<availableStations.size(); i++){
+      radioStationInfo currentStation = availableStations.at(i);
+      root["stations"][i]["id"] = currentStation.id;
+      root["stations"][i]["name"] = currentStation.name;
+      root["stations"][i]["host"] = currentStation.host;
+      root["stations"][i]["path"] = currentStation.path;
+      root["stations"][i]["port"] = currentStation.port;
+      root["stations"][i]["isFavourite"] = currentStation.isFavourite;
+    }
+    serializeJson(root, *response);
+    request->send(response);
   });
   server.on("/stations", HTTP_POST, [](AsyncWebServerRequest *request){
     }, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
@@ -408,13 +415,18 @@ void setup () {
         request->send(400, "text/plain", "Wrong parameters");
       }
   });
-  server.on("/stations/favoutrites", HTTP_POST, [](AsyncWebServerRequest *request){
+  server.on("/station/prev", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", "dziala :)");
+  });
+  server.on("/stations/favourites", HTTP_POST, [](AsyncWebServerRequest *request){
     }, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
       DynamicJsonDocument doc(1024);
       DeserializationError error = deserializeJson(doc, (const char*)data);
+      //Serial.println(doc);
       bool success = false;
       if(!error) {
         int index = doc["index"];
+        Serial.println(index);
         success = addToFavourites(index);
       }
       if(success){
