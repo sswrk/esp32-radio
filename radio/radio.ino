@@ -9,7 +9,7 @@
 #include <ESPVS1003.h>
 #include <SPI.h>
 
-#define EEPROM_SIZE 2
+#define EEPROM_SIZE 3
 
 
 /*----------------------------------
@@ -63,6 +63,7 @@ Vector<radioStationInfo> availableStations(availableStationsArray);
 
 long nextId = 0;
 
+String filePath = "/stations.txt";
 
 /*----------------------------------
           VS1003 SETTINGS
@@ -125,6 +126,7 @@ bool addRadioStation(const char* host, const char* path, const char* name, int p
   
   Serial.println("Added radio station!");
   updateNextId();
+  addStationToFile(newStation);
   return true;
 }
 
@@ -149,6 +151,7 @@ bool deleteRadioStation(int id){
   }
   Serial.println("Removed radio station! ");
   takenIds[id] = false;
+  deleteStationFromFile(id);
   return true;
 }
 
@@ -162,6 +165,7 @@ bool addToFavourites(int id){
   }
   availableStations.at(i).isFavourite = true;
   Serial.println("Added station to favourites!");
+  addStationToFavouritesToFile(id);
   return true;
 }
 
@@ -175,6 +179,7 @@ bool removeFromFavourites(int id){
   }
   availableStations.at(i).isFavourite = false;
   Serial.println("Removed station from favourites!");
+  removeStationFromFavouritesFromFile(id);
   return true;
 }
 
@@ -188,9 +193,11 @@ bool switchFavourites(int id){
   }
   availableStations.at(i).isFavourite = !availableStations.at(i).isFavourite;
   if(availableStations.at(i).isFavourite) {
+    addStationToFavouritesToFile(id);
     Serial.println("Added station to favourites!");
   }
   else {
+    removeStationFromFavouritesFromFile(id);
     Serial.println("Removed station from favourites!");
   }
   return true;
@@ -308,6 +315,36 @@ void switchToPreviousStation(){
 
 void drawRadioStationName(int id) {
   Serial.println(availableStations.at(id).host);
+}
+
+void addStationToFile(radioStationInfo station) {
+  File file = SPIFFS.open(filePath, "w+");
+  //TODO
+  file.close();
+}
+
+void deleteStationFromFile(int id) {
+  File file = SPIFFS.open(filePath, "w+");
+  //TODO
+  file.close();
+}
+
+void addStationToFavouritesToFile(int id) {
+  File file = SPIFFS.open(filePath, "w+");
+  //TODO
+  file.close();
+}
+
+void removeStationFromFavouritesFromFile(int id) {
+  File file = SPIFFS.open(filePath, "w+");
+  //TODO
+  file.close();
+}
+
+void readStationsFromFile() {
+  File file = SPIFFS.open(filePath, "w+");
+  //TODO
+  file.close();
 }
 
 /*----------------------------------
@@ -433,6 +470,18 @@ void writeLastStationToEEPROM(int id) {
   Serial.println("Wrote station ID to EEPROM: " + String(radioStation));
 }
 
+uint8_t getVolumeFromEEPROM() {
+  uint8_t vol = EEPROM.read(2);
+  Serial.println("Got volume from EEPROM: " + String(vol));
+  return vol;
+}
+
+void writeVolumeToEEPROM(uint8_t vol) {
+  EEPROM.write(2, vol);
+  EEPROM.commit();
+  Serial.println("Wrote volume to EEPROM: " + String(vol));
+}
+
 
 /*----------------------------------
                SETUP
@@ -468,6 +517,8 @@ void setup () {
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
   }
+  
+  readStationsFromFile();
 
   //WIFI init
   connectToWIFI();
@@ -610,6 +661,10 @@ void setup () {
   //SPI.begin(sckVS, misoVS, mosiVS);
   Serial.println("SPI set up");
   player.begin();
+  uint8_t vol = getVolumeFromEEPROM();
+  if(vol>=0 && vol<=200){
+    volume = vol;
+  }
   player.setVolume(volume);
   Serial.println("VS1003 set up");
 
@@ -632,6 +687,7 @@ void loop() {
   if (volume != previousVolume) {
     player.setVolume(volume);
     previousVolume = volume;
+    writeVolumeToEEPROM(volume);
   }
 
   int ssize = client.available();
