@@ -290,6 +290,34 @@ void IRAM_ATTR addOrRemoveFavouriteButtonInterrupt() {
   }
 }
 
+void IRAM_ATTR volumeUpButtonInterrupt() {
+
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis > buttonIntervalMillis) {
+
+    Serial.println("VOLUME UP");
+
+    volumeUp();
+
+    previousButtonMillis = currentMillis;
+    
+  }
+}
+
+void IRAM_ATTR volumeDownButtonInterrupt() {
+
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis > buttonIntervalMillis) {
+
+    Serial.println("VOLUME UP");
+
+    volumeDown();
+
+    previousButtonMillis = currentMillis;
+    
+  }
+}
+
 /*----------------------------------
     RADIO CONNECTION FUNCTIONS
 ----------------------------------*/
@@ -341,6 +369,9 @@ void writeLastStationToEEPROM(int id) {
 }
 
 
+/*----------------------------------
+               SETUP
+----------------------------------*/
 void setup () {
 
   Serial.begin(115200);
@@ -355,10 +386,14 @@ void setup () {
   pinMode(previousButton, INPUT_PULLUP);
   pinMode(nextButton, INPUT_PULLUP);
   pinMode(addOrRemoveFavouriteButton, INPUT_PULLUP);
+  pinMode(volumeUpButton, INPUT_PULLUP);
+  pinMode(volumeDownButton, INPUT_PULLUP);
 
   attachInterrupt(digitalPinToInterrupt(previousButton), previousButtonInterrupt, RISING);
   attachInterrupt(digitalPinToInterrupt(nextButton), nextButtonInterrupt, RISING);
   attachInterrupt(digitalPinToInterrupt(addOrRemoveFavouriteButton), addOrRemoveFavouriteButtonInterrupt, RISING);
+  attachInterrupt(digitalPinToInterrupt(volumeUpButton), volumeUpButtonInterrupt, RISING);
+  attachInterrupt(digitalPinToInterrupt(volumeDownButton), volumeDownButtonInterrupt, RISING);
 
   
   //SPIFFS init
