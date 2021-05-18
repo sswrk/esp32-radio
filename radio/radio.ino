@@ -18,9 +18,9 @@
 //buttons
 const int previousButton = 13; //D13
 const int nextButton = 15; //D15
-const int addOrRemoveFavouriteButton = 18; //D18
-const int switchFavouritesAllButton = 5; //D5
-const int volumeUpButton = 23; //D23
+const int addOrRemoveFavouriteButton = 4; //D4
+const int switchFavouritesModeButton = 2; //D2
+const int volumeUpButton = 25; //D25
 const int volumeDownButton = 22; //D22
 //VS1003
 uint8_t csVS = 32; //D32
@@ -55,6 +55,7 @@ int radioStation = 0;
 bool connectedToStation = false;
 int previousRadioStation = -1;
 bool paused = false;
+bool favouritesMode = false;
 
 radioStationInfo availableStationsArray[100];
 bool takenIds[100] = {false};
@@ -69,6 +70,7 @@ long nextId = 0;
 uint8_t buff[32];
 VS1003 player(csVS, dcsVS, dreqVS, rsetVS);
 uint8_t volume = 100;
+uint8_t previousVolume = 100;
 
 
 /*----------------------------------
@@ -143,9 +145,6 @@ bool deleteRadioStation(int id){
     }
     else if(availableStations.size() > 0){
       radioStation--;
-      connectToStation(radioStation);
-      previousRadioStation = radioStation;
-      writeLastStationToEEPROM(radioStation);
     }
   }
   Serial.println("Removed radio station! ");
@@ -188,6 +187,12 @@ bool switchFavourites(int id){
     return false;
   }
   availableStations.at(i).isFavourite = !availableStations.at(i).isFavourite;
+  if(availableStations.at(i).isFavourite) {
+    Serial.println("Added station to favourites!");
+  }
+  else {
+    Serial.println("Removed station from favourites!");
+  }
   return true;
 }
 
@@ -200,42 +205,105 @@ bool setStation(int id) {
     return false;
   }
   radioStation = i;
-  connectToStation(radioStation);
-  previousRadioStation = radioStation;
-  writeLastStationToEEPROM(radioStation);
   return true;
 }
 
 void toggleVolume() {
   if(paused==true) {
     player.setVolume(volume);
+    Serial.println("Playing");
   }
   else {
     player.setVolume(0);
     paused = true;
-  }
-}
-
-void volumeUp() {
-  if(volume<=90){
-    volume += 10;
-    player.setVolume(volume);
-  }
-  if(volume>90 && volume<100) {
-    volume = 100;
-    player.setVolume(volume);
+    Serial.println("Muted");
   }
 }
 
 void volumeDown() {
+  if(volume<=190){
+    volume += 10;
+  }
+  if(volume>190 && volume<200) {
+    volume = 200;
+  }
+  volume += 10;
+  Serial.print("Volume: ");
+  Serial.print(volume);
+  Serial.println();
+}
+
+void volumeUp() {
   if(volume>=10) {
     volume -= 10;
-    player.setVolume(volume);
   }
   if(volume>0 && volume<10){
     volume = 0;
-    player.setVolume(volume);
   }
+  Serial.print("Volume: ");
+  Serial.print(volume);
+  Serial.println();
+}
+
+void switchFavouritesMode() {
+  if(favouritesMode){
+    favouritesMode = false;
+    Serial.println("Turned favourites mode off");
+    return;
+  }
+  int i=0;
+  while(i<availableStations.size() && availableStations.at(i).isFavourite==false){
+    i++;
+  }
+  if(i!=availableStations.size()) {
+    radioStation = i;
+  }
+  favouritesMode = true;
+  Serial.println("Turned favourites mode on");
+}
+
+void switchToNextStation() {
+  if(favouritesMode){
+    int i = radioStation + 1;
+    while(i!=radioStation && availableStations.at(i).isFavourite!=true){
+      if(i+1>=availableStations.size()){
+        i = 0;
+      }
+      else {
+        i++;
+      }
+    }
+    radioStation = i;
+  }
+  else {
+    if (radioStation < availableStations.size() - 1)
+      radioStation++;
+    else
+      radioStation = 0;
+  }
+  Serial.println("Switched to next station");
+}
+
+void switchToPreviousStation(){
+  if(favouritesMode){
+    int i = radioStation - 1;
+    while(i!=radioStation && availableStations.at(i).isFavourite!=true){
+      if(i<=0){
+        i = availableStations.size() - 1;
+      }
+      else {
+        i--;
+      }
+    }
+    radioStation = i;
+  }
+  else {
+    if (radioStation > 0)
+      radioStation--;
+    else
+      radioStation = availableStations.size() - 1;
+  }
+  Serial.println("Switched to previous station");
 }
 
 void drawRadioStationName(int id) {
@@ -249,13 +317,8 @@ void IRAM_ATTR previousButtonInterrupt() {
 
   unsigned long currentMillis = millis();
   if (currentMillis - previousButtonMillis > buttonIntervalMillis) {
-
-    Serial.println("PREVIOUS");
-
-    if (radioStation > 0)
-      radioStation--;
-    else
-      radioStation = availableStations.size() - 1;
+    Serial.println("PREVIOUS BUTTON");
+    switchToPreviousStation();
 
     previousButtonMillis = currentMillis;
   }
@@ -265,13 +328,8 @@ void IRAM_ATTR nextButtonInterrupt() {
 
   unsigned long currentMillis = millis();
   if (currentMillis - previousButtonMillis > buttonIntervalMillis) {
-
-    Serial.println("NEXT");
-
-    if (radioStation < availableStations.size() - 1)
-      radioStation++;
-    else
-      radioStation = 0;
+    Serial.println("NEXT BUTTON");
+    switchToNextStation();
 
     previousButtonMillis = currentMillis;
   }
@@ -281,9 +339,7 @@ void IRAM_ATTR addOrRemoveFavouriteButtonInterrupt() {
 
   unsigned long currentMillis = millis();
   if (currentMillis - previousButtonMillis > buttonIntervalMillis) {
-
-    Serial.println("ADD OR REMOVE FAVOURITE");
-
+    Serial.println("ADD OR REMOVE FAV BUTTON");
     switchFavourites(radioStation);
 
     previousButtonMillis = currentMillis;
@@ -291,12 +347,10 @@ void IRAM_ATTR addOrRemoveFavouriteButtonInterrupt() {
 }
 
 void IRAM_ATTR volumeUpButtonInterrupt() {
-
+  
   unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis > buttonIntervalMillis) {
-
-    Serial.println("VOLUME UP");
-
+  if (currentMillis - previousButtonMillis > buttonIntervalMillis) {
+    Serial.println("VOLUME UP BUTTON");
     volumeUp();
 
     previousButtonMillis = currentMillis;
@@ -307,15 +361,26 @@ void IRAM_ATTR volumeUpButtonInterrupt() {
 void IRAM_ATTR volumeDownButtonInterrupt() {
 
   unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis > buttonIntervalMillis) {
-
-    Serial.println("VOLUME UP");
-
+  if (currentMillis - previousButtonMillis > buttonIntervalMillis) {
+    Serial.println("VOLUME DOWN BUTTON");
     volumeDown();
 
     previousButtonMillis = currentMillis;
     
   }
+}
+
+void IRAM_ATTR switchFavouritesModeButtonInterrupt() {
+
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousButtonMillis > buttonIntervalMillis) {
+    Serial.println("SWITCH FAVOURITES BUTTON");
+    switchFavouritesMode();
+
+    previousButtonMillis = currentMillis;
+    
+  }
+  
 }
 
 /*----------------------------------
@@ -388,12 +453,14 @@ void setup () {
   pinMode(addOrRemoveFavouriteButton, INPUT_PULLUP);
   pinMode(volumeUpButton, INPUT_PULLUP);
   pinMode(volumeDownButton, INPUT_PULLUP);
+  pinMode(switchFavouritesModeButton, INPUT_PULLUP);
 
   attachInterrupt(digitalPinToInterrupt(previousButton), previousButtonInterrupt, RISING);
   attachInterrupt(digitalPinToInterrupt(nextButton), nextButtonInterrupt, RISING);
   attachInterrupt(digitalPinToInterrupt(addOrRemoveFavouriteButton), addOrRemoveFavouriteButtonInterrupt, RISING);
   attachInterrupt(digitalPinToInterrupt(volumeUpButton), volumeUpButtonInterrupt, RISING);
   attachInterrupt(digitalPinToInterrupt(volumeDownButton), volumeDownButtonInterrupt, RISING);
+  attachInterrupt(digitalPinToInterrupt(switchFavouritesModeButton), switchFavouritesModeButtonInterrupt, RISING);
 
   
   //SPIFFS init
@@ -561,6 +628,10 @@ void loop() {
     connectToStation(radioStation);
     previousRadioStation = radioStation;
     writeLastStationToEEPROM(radioStation);
+  }
+  if (volume != previousVolume) {
+    player.setVolume(volume);
+    previousVolume = volume;
   }
 
   int ssize = client.available();
