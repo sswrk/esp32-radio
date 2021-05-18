@@ -74,12 +74,8 @@ uint8_t volume = 100;
 /*----------------------------------
            WIFI SETTINGS
 ----------------------------------*/
-//char ssid[] = "<SSID>";
-//char pass[] = "<PASS>";
-char ssid[] = "Orange_Swiatlowod_A370";
-char pass[] = "N76T37QV7AE3";
-//char ssid[] = "siec1";
-//char pass[] = "hav34nic3lif3";
+char ssid[] = "<SSID>";
+char pass[] = "<PASS>";
 
 
 /*----------------------------------
