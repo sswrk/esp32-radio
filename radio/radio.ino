@@ -54,6 +54,7 @@ struct radioStationInfo{
 int radioStation = 0;
 bool connectedToStation = false;
 int previousRadioStation = -1;
+bool paused = false;
 
 radioStationInfo availableStationsArray[100];
 bool takenIds[100] = {false};
@@ -73,8 +74,12 @@ uint8_t volume = 100;
 /*----------------------------------
            WIFI SETTINGS
 ----------------------------------*/
-char ssid[] = "<SSID>";
-char pass[] = "<PASS>";
+//char ssid[] = "<SSID>";
+//char pass[] = "<PASS>";
+char ssid[] = "Orange_Swiatlowod_A370";
+char pass[] = "N76T37QV7AE3";
+//char ssid[] = "siec1";
+//char pass[] = "hav34nic3lif3";
 
 
 /*----------------------------------
@@ -120,24 +125,14 @@ bool addRadioStation(const char* host, const char* path, const char* name, int p
   newStation.name = String(name);
   availableStations.push_back(newStation);
   
-  Serial.println("Added radio station! Available radio stations: ");
-  for(int i=0; i<availableStations.size(); i++){
-    Serial.print(availableStations.at(i).name);
-    Serial.print(availableStations.at(i).id);
-    Serial.print(": ");
-    Serial.print(availableStations.at(i).host);
-    Serial.print(":");
-    Serial.print(availableStations.at(i).port);
-    Serial.print(availableStations.at(i).path);
-    Serial.println("");
-  }
+  Serial.println("Added radio station!");
   updateNextId();
   return true;
 }
 
-bool deleteRadioStation(int index){
+bool deleteRadioStation(int id){
   int i = 0;
-  while(i<availableStations.size() && availableStations.at(i).id != index){
+  while(i<availableStations.size() && availableStations.at(i).id != id){
     i++;
   }
   if(i==availableStations.size()){
@@ -157,21 +152,14 @@ bool deleteRadioStation(int index){
       writeLastStationToEEPROM(radioStation);
     }
   }
-  Serial.println("Removed radio station! Available radio stations: ");
-  for(int j=0; j<availableStations.size(); j++){
-    Serial.print(availableStations.at(j).host);
-    Serial.print(":");
-    Serial.print(availableStations.at(j).port);
-    Serial.print(availableStations.at(j).path);
-    Serial.println("");
-  }
-  takenIds[index] = false;
+  Serial.println("Removed radio station! ");
+  takenIds[id] = false;
   return true;
 }
 
-bool addToFavourites(int index){
+bool addToFavourites(int id){
   int i=0;
-  while(i<availableStations.size() && availableStations.at(i).id != index){
+  while(i<availableStations.size() && availableStations.at(i).id != id){
     i++;
   }
   if(i==availableStations.size()){
@@ -182,9 +170,9 @@ bool addToFavourites(int index){
   return true;
 }
 
-bool removeFromFavourites(int index){
+bool removeFromFavourites(int id){
   int i=0;
-  while(i<availableStations.size() && availableStations.at(i).id != index){
+  while(i<availableStations.size() && availableStations.at(i).id != id){
     i++;
   }
   if(i==availableStations.size()){
@@ -195,12 +183,9 @@ bool removeFromFavourites(int index){
   return true;
 }
 
-bool switchFavourites(int index){
-  if(index == NULL){
-    return false;
-  }
+bool switchFavourites(int id){
   int i=0;
-  while(i<availableStations.size() && availableStations.at(i).id != index){
+  while(i<availableStations.size() && availableStations.at(i).id != id){
     i++;
   }
   if(i==availableStations.size()){
@@ -208,6 +193,53 @@ bool switchFavourites(int index){
   }
   availableStations.at(i).isFavourite = !availableStations.at(i).isFavourite;
   return true;
+}
+
+bool setStation(int id) {
+  int i=0;
+  while(i<availableStations.size() && availableStations.at(i).id != id){
+    i++;
+  }
+  if(i==availableStations.size()){
+    return false;
+  }
+  radioStation = i;
+  connectToStation(radioStation);
+  previousRadioStation = radioStation;
+  writeLastStationToEEPROM(radioStation);
+  return true;
+}
+
+void toggleVolume() {
+  if(paused==true) {
+    player.setVolume(volume);
+  }
+  else {
+    player.setVolume(0);
+    paused = true;
+  }
+}
+
+void volumeUp() {
+  if(volume<=90){
+    volume += 10;
+    player.setVolume(volume);
+  }
+  if(volume>90 && volume<100) {
+    volume = 100;
+    player.setVolume(volume);
+  }
+}
+
+void volumeDown() {
+  if(volume>=10) {
+    volume -= 10;
+    player.setVolume(volume);
+  }
+  if(volume>0 && volume<10){
+    volume = 0;
+    player.setVolume(volume);
+  }
 }
 
 void drawRadioStationName(int id) {
@@ -401,8 +433,8 @@ void setup () {
       DeserializationError error = deserializeJson(doc, (const char*)data);
       bool success = false;
       if(!error) {
-        int index = doc["index"];
-        success = deleteRadioStation(index);
+        int id = doc["id"];
+        success = deleteRadioStation(id);
       }
       if(success){
         request->send(200, "text/plain", "Radio station deleted");
@@ -412,14 +444,12 @@ void setup () {
   });
   server.on("/favourites", HTTP_POST, [](AsyncWebServerRequest *request){
     }, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
-      Serial.println("dd");
       DynamicJsonDocument doc(1024);
       DeserializationError error = deserializeJson(doc, (const char*)data);
       bool success = false;
       if(!error) {
-        int index = doc["index"];
-        Serial.println(index);
-        success = addToFavourites(index);
+        int id = doc["id"];
+        success = addToFavourites(id);
       }
       if(success){
         request->send(200, "text/plain", "Radio station added to favourited");
@@ -433,8 +463,8 @@ void setup () {
       DeserializationError error = deserializeJson(doc, (const char*)data);
       bool success = false;
       if(!error) {
-        int index = doc["index"];
-        success = removeFromFavourites(index);
+        int id = doc["id"];
+        success = removeFromFavourites(id);
       }
       if(success){
         request->send(200, "text/plain", "Radio station removed from favourites");
@@ -442,8 +472,32 @@ void setup () {
         request->send(400, "text/plain", "Wrong parameters");
       }
   });
-  server.on("/station/prev", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", "dziala :)");
+  server.on("/set-station", HTTP_POST, [](AsyncWebServerRequest *request){
+    }, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+      DynamicJsonDocument doc(1024);
+      DeserializationError error = deserializeJson(doc, (const char*)data);
+      bool success = false;
+      if(!error) {
+        int id = doc["id"];
+        success = setStation(id);
+      }
+      if(success){
+        request->send(200, "text/plain", "Radio station set");
+      } else {
+        request->send(400, "text/plain", "Wrong parameters");
+      }
+  });
+  server.on("/toggle-play", HTTP_GET, [](AsyncWebServerRequest *request){
+    toggleVolume();
+    request->send(200, "text/plain", "Toggled play");
+  });
+  server.on("/louder", HTTP_GET, [](AsyncWebServerRequest *request){
+    volumeUp();
+    request->send(200, "text/plain", "Volume +10");
+  });
+  server.on("/more-quiet", HTTP_GET, [](AsyncWebServerRequest *request){
+    volumeDown();
+    request->send(200, "text/plain", "Volume -10");
   });
   server.onNotFound(notFound);
 

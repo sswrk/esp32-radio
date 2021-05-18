@@ -67,7 +67,7 @@ async function toggleStationIsFavourite() {
             }
         }
     }
-    xmlhttp.open(currentStation.isFavourite ? "DELETE" : "POST", "/stations/favourites", true);
+    xmlhttp.open(currentStation.isFavourite ? "DELETE" : "POST", "/favourites", true);
     xmlhttp.send('id=' + currentStation.id);
 
 }
@@ -83,7 +83,7 @@ async function selectPreviousStation() {
     if (nextStationIndex < 0) nextStationIndex = savedStationsArr.length - 1;
     const nextStation = savedStationsArr[nextStationIndex];
 
-    xmlhttp.open("POST", "/station/set-station", true);
+    xmlhttp.open("POST", "/set-station", true);
     xmlhttp.send('id=' + nextStation.id)
 }
 
@@ -97,7 +97,7 @@ function togglePlayState() {
             playButton.addClass(isPlaying ? 'btn-danger' : 'btn-success');
         }
     }
-    xmlhttp.open("GET", "/control/toggle-play", true);
+    xmlhttp.open("GET", "/toggle-play", true);
     xmlhttp.send();
 }
 
@@ -110,7 +110,7 @@ function selectNextStation() {
     let nextStationIndex = savedStationsArr.findIndex((s) => s.id === currentStation.id) + 1;
     if (nextStationIndex >= savedStationsArr.length) nextStationIndex = 0;
     const nextStation = savedStationsArr[nextStationIndex];
-    xmlhttp.open("POST", "/station/set-station", true);
+    xmlhttp.open("POST", "/set-station", true);
     xmlhttp.send('id=' + nextStation.id)
 }
 
@@ -118,14 +118,14 @@ function selectNextStation() {
 function makeMoreQuiet() {
     xmlhttp.onreadystatechange = () => {
     };
-    xmlhttp.open("GET", "/control/more-quiet", true)
+    xmlhttp.open("GET", "/more-quiet", true)
     xmlhttp.send();
 }
 
 function makeLouder() {
     xmlhttp.onreadystatechange = () => {
     };
-    xmlhttp.open("GET", "/control/louder", true)
+    xmlhttp.open("GET", "/louder", true)
     xmlhttp.send();
 }
 
@@ -151,7 +151,6 @@ function addStationToSaved() {
     formData.append('path', $('#path').val());
 
     xmlhttp.open("POST", "/stations", true);
-    xmlhttp.setRequestHeader("Content-Type", "multipart/form-data");
     xmlhttp.send(formData);
 }
 
