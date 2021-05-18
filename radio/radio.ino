@@ -170,9 +170,6 @@ bool deleteRadioStation(int index){
 }
 
 bool addToFavourites(int index){
-  if(index == NULL){
-    return false;
-  }
   int i=0;
   while(i<availableStations.size() && availableStations.at(i).id != index){
     i++;
@@ -181,14 +178,11 @@ bool addToFavourites(int index){
     return false;
   }
   availableStations.at(i).isFavourite = true;
-  Serial.println("ADDED TO FAVS");
+  Serial.println("Added station to favourites!");
   return true;
 }
 
 bool removeFromFavourites(int index){
-  if(index == NULL){
-    return false;
-  }
   int i=0;
   while(i<availableStations.size() && availableStations.at(i).id != index){
     i++;
@@ -197,6 +191,7 @@ bool removeFromFavourites(int index){
     return false;
   }
   availableStations.at(i).isFavourite = false;
+  Serial.println("Removed station from favourites!");
   return true;
 }
 
@@ -415,14 +410,11 @@ void setup () {
         request->send(400, "text/plain", "Wrong parameters");
       }
   });
-  server.on("/station/prev", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", "dziala :)");
-  });
-  server.on("/stations/favourites", HTTP_POST, [](AsyncWebServerRequest *request){
+  server.on("/favourites", HTTP_POST, [](AsyncWebServerRequest *request){
     }, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+      Serial.println("dd");
       DynamicJsonDocument doc(1024);
       DeserializationError error = deserializeJson(doc, (const char*)data);
-      //Serial.println(doc);
       bool success = false;
       if(!error) {
         int index = doc["index"];
@@ -430,12 +422,12 @@ void setup () {
         success = addToFavourites(index);
       }
       if(success){
-        request->send(200, "text/plain", "Radio station deleted");
+        request->send(200, "text/plain", "Radio station added to favourited");
       } else {
         request->send(400, "text/plain", "Wrong parameters");
       }
   });
-  server.on("/stations/favourites", HTTP_DELETE, [](AsyncWebServerRequest *request){
+  server.on("/favourites", HTTP_DELETE, [](AsyncWebServerRequest *request){
     }, NULL, [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
       DynamicJsonDocument doc(1024);
       DeserializationError error = deserializeJson(doc, (const char*)data);
@@ -445,10 +437,13 @@ void setup () {
         success = removeFromFavourites(index);
       }
       if(success){
-        request->send(200, "text/plain", "Radio station deleted");
+        request->send(200, "text/plain", "Radio station removed from favourites");
       } else {
         request->send(400, "text/plain", "Wrong parameters");
       }
+  });
+  server.on("/station/prev", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", "dziala :)");
   });
   server.onNotFound(notFound);
 
