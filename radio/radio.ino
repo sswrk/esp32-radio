@@ -152,6 +152,7 @@ void initSPIFFS(){
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
   }
+  NVS.begin();
   readStationsFromFile();
 }
 

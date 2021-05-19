@@ -89,7 +89,7 @@ bool addToFavourites(int id){
   }
   availableStations.at(i).isFavourite = true;
   Serial.println("Added station to favourites!");
-  addStationToFavouritesToFile(id);
+  addStationToFavouritesToFile(availableStations.at(i));
   return true;
 }
 
@@ -103,7 +103,7 @@ bool removeFromFavourites(int id){
   }
   availableStations.at(i).isFavourite = false;
   Serial.println("Removed station from favourites!");
-  removeStationFromFavouritesFromFile(id);
+  removeStationFromFavouritesFromFile(availableStations.at(i));
   return true;
 }
 
@@ -117,11 +117,11 @@ bool switchFavourites(int id){
   }
   availableStations.at(i).isFavourite = !availableStations.at(i).isFavourite;
   if(availableStations.at(i).isFavourite) {
-    addStationToFavouritesToFile(id);
+    addStationToFavouritesToFile(availableStations.at(i));
     Serial.println("Added station to favourites!");
   }
   else {
-    removeStationFromFavouritesFromFile(id);
+    removeStationFromFavouritesFromFile(availableStations.at(i));
     Serial.println("Removed station from favourites!");
   }
   return true;
@@ -242,31 +242,46 @@ void drawRadioStationName(int id) {
 }
 
 void addStationToFile(RadioStationInfo station) {
-  File file = SPIFFS.open(filePath, "w+");
-  //TODO
-  file.close();
+  String newLine = 
+    station.name + "," +
+    String(station.isFavourite) + "," +
+    station.host + "," +
+    station.path + "," +
+    String(station.port);
+  NVS.setString(String(station.id), newLine);
+  Serial.println(NVS.getString(String(station.id)));
 }
 
 void deleteStationFromFile(int id) {
-  File file = SPIFFS.open(filePath, "w+");
-  //TODO
-  file.close();
+  NVS.setString(String(id), "");
 }
 
-void addStationToFavouritesToFile(int id) {
-  File file = SPIFFS.open(filePath, "w+");
-  //TODO
-  file.close();
+void addStationToFavouritesToFile(RadioStationInfo station) {
+  addStationToFile(station);
 }
 
-void removeStationFromFavouritesFromFile(int id) {
-  File file = SPIFFS.open(filePath, "w+");
-  //TODO
-  file.close();
+void removeStationFromFavouritesFromFile(RadioStationInfo station) {
+  addStationToFile(station);
 }
 
 void readStationsFromFile() {
-  File file = SPIFFS.open(filePath, "w+");
-  //TODO
-  file.close();
+  for(int i=0; i<100; i++){
+    String stationString = NVS.getString(String(i));
+    Serial.println(stationString);
+    if(stationString!=NULL && !stationString.equals("")){
+      RadioStationInfo station;
+      station.id = i;
+      station.name = stationString.substring(0, stationString.indexOf(","));
+      stationString.remove(0, stationString.indexOf(",") + 1);
+      station.isFavourite = stationString.substring(0, stationString.indexOf(",")).toInt();
+      stationString.remove(0, stationString.indexOf(",") + 1);
+      station.host = stationString.substring(0, stationString.indexOf(","));
+      stationString.remove(0, stationString.indexOf(",") + 1);
+      station.path = stationString.substring(0, stationString.indexOf(","));
+      stationString.remove(0, stationString.indexOf(",") + 1);
+      station.port = stationString.toInt();
+      availableStations.push_back(station);
+    }
+  }
+  updateNextId();
 }

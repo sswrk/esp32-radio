@@ -2,6 +2,7 @@
 #define radio_h
 
 #include <Arduino.h>
+#include <ArduinoNvs.h>
 #include <Vector.h>
 #include <SPIFFS.h>
 
@@ -57,7 +58,7 @@ void drawRadioStationName(int id);
 
 void addStationToFile(RadioStationInfo station);
 void deleteStationFromFile(int id);
-void addStationToFavouritesToFile(int id);
-void removeStationFromFavouritesFromFile(int id);
+void addStationToFavouritesToFile(RadioStationInfo station);
+void removeStationFromFavouritesFromFile(RadioStationInfo station);
 void readStationsFromFile();
 #endif
