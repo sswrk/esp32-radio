@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <ESPVS1003.h>
+#include <SPI.h>
 
 /*----------------------------------
            PIN MAPPINGS

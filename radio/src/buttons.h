@@ -29,4 +29,6 @@ void IRAM_ATTR addOrRemoveFavouriteButtonInterrupt();
 void IRAM_ATTR volumeUpButtonInterrupt();
 void IRAM_ATTR volumeDownButtonInterrupt();
 void IRAM_ATTR switchFavouritesModeButtonInterrupt();
+
+void initButtons();
 #endif
