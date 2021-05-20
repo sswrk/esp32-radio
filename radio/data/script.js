@@ -123,15 +123,15 @@ async function toggleStationIsFavourite() {
 }
 
 async function selectPreviousStation() {
-    xmlhttp.onreadystatechange = function () {
-        if (this.readyState === 4 && this.status === 200) {
-            updateCurrentStationDOM(this.responseText)
-        }
-    }
-
     let nextStationIndex = savedStationsArr.findIndex((s) => s.id === currentStation.id) - 1;
     if (nextStationIndex < 0) nextStationIndex = savedStationsArr.length - 1;
     const nextStation = savedStationsArr[nextStationIndex];
+
+    xmlhttp.onreadystatechange = function () {
+        if (this.readyState === 4 && this.status === 200) {
+            updateCurrentStation(nextStation)
+        }
+    }
 
     xmlhttp.open("POST", "/set-station", true);
     const data = JSON.stringify({id: nextStation.id})
@@ -153,14 +153,16 @@ function togglePlayState() {
 }
 
 function selectNextStation() {
+    let nextStationIndex = savedStationsArr.findIndex((s) => s.id === currentStation.id) - 1;
+    if (nextStationIndex < 0) nextStationIndex = savedStationsArr.length - 1;
+    const nextStation = savedStationsArr[nextStationIndex];
+
     xmlhttp.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
-            updateCurrentStationDOM(this.responseText)
+            updateCurrentStation(nextStation)
         }
     }
-    let nextStationIndex = savedStationsArr.findIndex((s) => s.id === currentStation.id) + 1;
-    if (nextStationIndex >= savedStationsArr.length) nextStationIndex = 0;
-    const nextStation = savedStationsArr[nextStationIndex];
+
     xmlhttp.open("POST", "/set-station", true);
     const data = JSON.stringify({id: nextStation.id})
     xmlhttp.send(data)
