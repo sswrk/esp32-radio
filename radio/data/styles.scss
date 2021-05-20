@@ -43,15 +43,14 @@
 }
 
 .list-group-list a {
-  display:flex;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
   align-items: center;
-  justify-content: start;
-  height: 56px;
 }
 
-.list-group button {
-  position: absolute;
-  right: 10px;
+.list-group-list div {
+  flex: 1;
 }
 
 .header h1 {

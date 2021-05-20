@@ -1,32 +1,32 @@
 let favouritesStationsArr = [];
 let savedStationsArr = [
-    // {
-    //     id: 1, isFavourite: false, name: 'hej',
-    // },
-    // {
-    //     id: 32, isFavourite: true, name: 'Andrzejska'
-    // },
-    // {
-    //     id: 31, isFavourite: false, name: 'Mother'
-    // },
-    // {
-    //     id: 30, isFavourite: true, name: 'Father'
-    // },
-    // {
-    //     id: 29, isFavourite: false, name: 'Sister'
-    // },
-    // {
-    //     id: 28, isFavourite: true, name: 'Pop'
-    // },
-    // {
-    //     id: 27, isFavourite: false, name: 'Lo-fi'
-    // },
-    // {
-    //     id: 26, isFavourite: true, name: 'Rock'
-    // },
-    // {
-    //     id: 25, isFavourite: true, name: 'Drum and Bass'
-    // }
+    {
+        id: 1, isFavourite: false, name: 'hej',
+    },
+    {
+        id: 32, isFavourite: true, name: 'Andrzejska'
+    },
+    {
+        id: 31, isFavourite: false, name: 'Mother'
+    },
+    {
+        id: 30, isFavourite: true, name: 'Father'
+    },
+    {
+        id: 29, isFavourite: false, name: 'Sister'
+    },
+    {
+        id: 28, isFavourite: true, name: 'Pop'
+    },
+    {
+        id: 27, isFavourite: false, name: 'Lo-fi'
+    },
+    {
+        id: 26, isFavourite: true, name: 'Rock'
+    },
+    {
+        id: 25, isFavourite: true, name: 'Drum and Bass'
+    }
 ];
 let currentStation = savedStationsArr[0];
 let isPlaying = false;
@@ -134,7 +134,7 @@ async function selectPreviousStation() {
     const nextStation = savedStationsArr[nextStationIndex];
 
     xmlhttp.open("POST", "/set-station", true);
-    const data = JSON.stringify({id:nextStation.id})
+    const data = JSON.stringify({id: nextStation.id})
     xmlhttp.send(data)
 }
 
@@ -211,13 +211,19 @@ function addStationToSaved() {
 
 function addStationsToDOM() {
     savedStationsArr.forEach((s) => {
+        const newDiv = document.createElement('div')
         const newChild = document.createElement('a');
         const deleteButton = document.createElement('button');
 
         $(deleteButton).html('delete').addClass('btn btn-danger').click(() => deleteStation(s))
 
-        $(newChild).html(s.name).addClass('list-group-item')
-            .addClass(' list-group-item-action').click(() => updateCurrentStation(s)).append(deleteButton)
+        $(newChild).addClass('list-group-item')
+            .addClass(' list-group-item-action')
+
+        $(newDiv).html(s.name).click(() => updateCurrentStation(s));
+
+        $(newChild).append(newDiv).append(deleteButton)
+
         document.getElementById('#saved-stations').appendChild(newChild);
     })
 }
@@ -226,13 +232,18 @@ function addFavouriteStationsToDOM() {
     favouritesStationsArr = savedStationsArr.filter(s => s.isFavourite);
 
     favouritesStationsArr.forEach((s) => {
+        const newDiv = document.createElement('div')
         const newChild = document.createElement('a');
         const deleteButton = document.createElement('button');
 
         $(deleteButton).html('delete').addClass('btn btn-danger').click(() => deleteStation(s))
 
-        $(newChild).html(s.name).addClass('list-group-item')
-            .addClass('list-group-item-action').click(() => updateCurrentStation(s)).append(deleteButton);
+        $(newChild).addClass('list-group-item')
+            .addClass(' list-group-item-action')
+
+        $(newDiv).html(s.name).click(() => updateCurrentStation(s));
+
+        $(newChild).append(newDiv).append(deleteButton)
 
         document.getElementById('#favourites-stations').appendChild(newChild);
     });
@@ -254,9 +265,9 @@ function updateStationsDOM() {
 }
 
 async function executeLoop() {
-    await fetchStations().then(() => {
-        
-    });
+    await fetchStations()
+    initStationsDOM()
+    updateCurrentStationDOM(currentStation);
 }
 
 executeLoop()
