@@ -142,13 +142,30 @@ function togglePlayState() {
     xmlhttp.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
             isPlaying = !isPlaying;
-            const playButton = $('#play-button');
-            playButton.html(isPlaying ? 'Pause' : 'Play');
-            playButton.removeClass(isPlaying ? 'btn-success' : 'btn-danger');
-            playButton.addClass(isPlaying ? 'btn-danger' : 'btn-success');
+            checkIsPlaying();
         }
     }
     xmlhttp.open("GET", "/toggle-play", true);
+    xmlhttp.send();
+}
+
+function checkIsPlaying() {
+    const playButton = $('#play-button');
+    playButton.html(isPlaying ? 'Pause' : 'Play');
+    playButton.removeClass(isPlaying ? 'btn-success' : 'btn-danger');
+    playButton.addClass(isPlaying ? 'btn-danger' : 'btn-success');
+}
+
+async function checkStationState() {
+    xmlhttp.onreadystatechange = function () {
+        if (this.readyState === 4 && this.status === 200) {
+            const response = JSON.parse(this.responseText);
+            updateCurrentStationDOM(response.station);
+            isPlaying = response.playing;
+            checkIsPlaying();
+        }
+    }
+    xmlhttp.open("GET", "/check-station", true);
     xmlhttp.send();
 }
 
@@ -268,6 +285,7 @@ function updateStationsDOM() {
 
 async function executeLoop() {
     await fetchStations();
+    setTimeout(() => checkStationState(), 1000);
 }
 
 executeLoop()
