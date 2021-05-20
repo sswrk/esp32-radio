@@ -1,32 +1,32 @@
 let favouritesStationsArr = [];
 let savedStationsArr = [
-    {
-        id: 1, isFavourite: false, name: 'hej',
-    },
-    {
-        id: 32, isFavourite: true, name: 'Andrzejska'
-    },
-    {
-        id: 31, isFavourite: false, name: 'Mother'
-    },
-    {
-        id: 30, isFavourite: true, name: 'Father'
-    },
-    {
-        id: 29, isFavourite: false, name: 'Sister'
-    },
-    {
-        id: 28, isFavourite: true, name: 'Pop'
-    },
-    {
-        id: 27, isFavourite: false, name: 'Lo-fi'
-    },
-    {
-        id: 26, isFavourite: true, name: 'Rock'
-    },
-    {
-        id: 25, isFavourite: true, name: 'Drum and Bass'
-    }
+    // {
+    //     id: 1, isFavourite: false, name: 'hej',
+    // },
+    // {
+    //     id: 32, isFavourite: true, name: 'Andrzejska'
+    // },
+    // {
+    //     id: 31, isFavourite: false, name: 'Mother'
+    // },
+    // {
+    //     id: 30, isFavourite: true, name: 'Father'
+    // },
+    // {
+    //     id: 29, isFavourite: false, name: 'Sister'
+    // },
+    // {
+    //     id: 28, isFavourite: true, name: 'Pop'
+    // },
+    // {
+    //     id: 27, isFavourite: false, name: 'Lo-fi'
+    // },
+    // {
+    //     id: 26, isFavourite: true, name: 'Rock'
+    // },
+    // {
+    //     id: 25, isFavourite: true, name: 'Drum and Bass'
+    // }
 ];
 let currentStation = savedStationsArr[0];
 let isPlaying = false;
@@ -35,7 +35,7 @@ let xmlhttp = new XMLHttpRequest();
 async function fetchStations() {
     xmlhttp.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
-            savedStationsArr = JSON.parse(this.responseText);
+            savedStationsArr = JSON.parse(this.responseText).stations;
             currentStation = savedStationsArr[0];
             favouritesStationsArr = savedStationsArr.filter(s => s.isFavourite);
             initIsFavourite();
@@ -46,6 +46,7 @@ async function fetchStations() {
 }
 
 async function initIsFavourite() {
+    console.log(currentStation);
     (currentStation.isFavourite) ? $('#add-favourite-heart').addClass('d-none') : $('#delete-favourite-heart').addClass('d-none');
 }
 
@@ -240,11 +241,12 @@ function updateStationsDOM() {
     initStationsDOM();
 }
 
-function executeLoop() {
-    fetchStations();
-    initStationsDOM()
-    initIsFavourite();
-    updateCurrentStationDOM(currentStation);
+async function executeLoop() {
+    await fetchStations().then(() => {
+        initStationsDOM()
+        initIsFavourite();
+        updateCurrentStationDOM(currentStation);
+    });
 }
 
 executeLoop()
