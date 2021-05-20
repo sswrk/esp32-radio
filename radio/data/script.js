@@ -39,6 +39,8 @@ async function fetchStations() {
             currentStation = savedStationsArr[0];
             favouritesStationsArr = savedStationsArr.filter(s => s.isFavourite);
             initIsFavourite();
+            initStationsDOM()
+            updateCurrentStationDOM(currentStation);
         }
     }
     xmlhttp.open("GET", "/stations", true);
@@ -86,12 +88,15 @@ async function deleteStation(station) {
         if (this.readyState === 4 && this.status === 200) {
             savedStationsArr = savedStationsArr.filter(s => s.id !== station.id);
             favouritesStationsArr = savedStationsArr.filter(s => s.isFavourite);
-            if (currentStation === station) currentStation = savedStationsArr[0];
+            if (currentStation === station) {
+                currentStation = savedStationsArr[0];
+                updateCurrentStation(currentStation);
+            }
             updateStationsDOM();
         }
     }
 
-    xmlhttp.open("POST", "/stations", true);
+    xmlhttp.open("DELETE", "/stations", true);
     const data = JSON.stringify({id: station.id})
     xmlhttp.send(data)
 }
@@ -177,9 +182,16 @@ function makeLouder() {
 }
 
 function addStationToSaved() {
+    const formData = JSON.stringify({
+        'name': $('#name').val(),
+        'host': $('#host').val(),
+        'port': $('#port').val(),
+        'path': $('#path').val()
+    });
+
     xmlhttp.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
-            savedStationsArr.push(JSON.parse(this.responseText));
+            savedStationsArr.push(JSON.parse(formData));
             $('#name').html('');
             $('#host').html('');
             $('#port').html('');
@@ -191,11 +203,6 @@ function addStationToSaved() {
             updateStationsDOM();
         }
     }
-    const formData = new FormData();
-    formData.append('name', $('#name').val());
-    formData.append('host', $('#host').val());
-    formData.append('port', $('#port').val());
-    formData.append('path', $('#path').val());
 
     xmlhttp.open("POST", "/stations", true);
     xmlhttp.send(formData);
@@ -248,8 +255,7 @@ function updateStationsDOM() {
 
 async function executeLoop() {
     await fetchStations().then(() => {
-        initStationsDOM()
-        updateCurrentStationDOM(currentStation);
+        
     });
 }
 

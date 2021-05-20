@@ -281,6 +281,7 @@ void readStationsFromFile() {
       stationString.remove(0, stationString.indexOf(",") + 1);
       station.port = stationString.toInt();
       availableStations.push_back(station);
+      takenIds[i] = true;
     }
   }
   updateNextId();
