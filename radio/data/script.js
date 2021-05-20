@@ -1,7 +1,7 @@
 let favouritesStationsArr = [];
 let savedStationsArr = [
     {
-        id:1, isFavourite: false, name: 'hej'
+        id: 1, isFavourite: false, name: 'hej',
     },
     {
         id: 32, isFavourite: true, name: 'Andrzejska'
@@ -49,10 +49,50 @@ async function initIsFavourite() {
     (currentStation.isFavourite) ? $('#add-favourite-heart').addClass('d-none') : $('#delete-favourite-heart').addClass('d-none');
 }
 
+async function checkIsFavourite(prevStation, newStation) {
+    if (prevStation.isFavourite !== newStation.isFavourite) {
+        if (prevStation.isFavourite) {
+            $('#add-favourite-heart').removeClass('d-none');
+            $('#delete-favourite-heart').addClass('d-none')
+        } else {
+            $('#add-favourite-heart').addClass('d-none');
+            $('#delete-favourite-heart').removeClass('d-none')
+
+        }
+    }
+}
+
 async function updateCurrentStation(newStation) {
+    xmlhttp.onreadystatechange = function () {
+        if (this.readyState === 4 && this.status === 200) {
+            updateCurrentStationDOM(newStation)
+        }
+    }
+
+    xmlhttp.open("POST", "/set-station", true);
+    xmlhttp.send('id=' + newStation.id)
+}
+
+async function updateCurrentStationDOM(newStation) {
+    checkIsFavourite(currentStation, newStation)
     currentStation = newStation;
     $('#current-station').html(currentStation.name);
 }
+
+async function deleteStation(station) {
+    xmlhttp.onreadystatechange = function () {
+        if (this.readyState === 4 && this.status === 200) {
+            savedStationsArr = savedStationsArr.filter(s => s.id !== station.id);
+            favouritesStationsArr = savedStationsArr.filter(s => s.isFavourite);
+            if (currentStation === station) currentStation = savedStationsArr[0];
+            updateStationsDOM();
+        }
+    }
+
+    xmlhttp.open("POST", "/stations", true);
+    xmlhttp.send('id=' + station.id)
+}
+
 
 async function toggleStationIsFavourite() {
     xmlhttp.onreadystatechange = function () {
@@ -65,6 +105,7 @@ async function toggleStationIsFavourite() {
                 $('#add-favourite-heart').removeClass('d-none');
                 $('#delete-favourite-heart').addClass('d-none');
             }
+            updateStationsDOM();
         }
     }
     xmlhttp.open(currentStation.isFavourite ? "DELETE" : "POST", "/favourites", true);
@@ -75,7 +116,7 @@ async function toggleStationIsFavourite() {
 async function selectPreviousStation() {
     xmlhttp.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
-            updateCurrentStation(this.responseText)
+            updateCurrentStationDOM(this.responseText)
         }
     }
 
@@ -104,7 +145,7 @@ function togglePlayState() {
 function selectNextStation() {
     xmlhttp.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
-            updateCurrentStation(this.responseText)
+            updateCurrentStationDOM(this.responseText)
         }
     }
     let nextStationIndex = savedStationsArr.findIndex((s) => s.id === currentStation.id) + 1;
@@ -131,7 +172,6 @@ function makeLouder() {
 
 function addStationToSaved() {
     xmlhttp.onreadystatechange = function () {
-        console.log(this.status)
         if (this.readyState === 4 && this.status === 200) {
             savedStationsArr.push(JSON.parse(this.responseText));
             $('#name').html('');
@@ -142,6 +182,7 @@ function addStationToSaved() {
             $(document).ready(function () {
                 $("#liveToast").toast('show');
             })
+            updateStationsDOM();
         }
     }
     const formData = new FormData();
@@ -154,37 +195,56 @@ function addStationToSaved() {
     xmlhttp.send(formData);
 }
 
+
 function addStationsToDOM() {
     savedStationsArr.forEach((s) => {
         const newChild = document.createElement('a');
+        const deleteButton = document.createElement('button');
+
+        $(deleteButton).html('delete').addClass('btn btn-danger').click(() => deleteStation(s))
+
         $(newChild).html(s.name).addClass('list-group-item')
-            .addClass(' list-group-item-action')
+            .addClass(' list-group-item-action').click(() => updateCurrentStation(s)).append(deleteButton)
         document.getElementById('#saved-stations').appendChild(newChild);
     })
 }
-
-function updateStationsDOM() {
-    addStationsToDOM();
-    addFavouriteStationsToDOM();
-}
-
 
 function addFavouriteStationsToDOM() {
     favouritesStationsArr = savedStationsArr.filter(s => s.isFavourite);
 
     favouritesStationsArr.forEach((s) => {
         const newChild = document.createElement('a');
+        const deleteButton = document.createElement('button');
+
+        $(deleteButton).html('delete').addClass('btn btn-danger').click(() => deleteStation(s))
+
         $(newChild).html(s.name).addClass('list-group-item')
-            .addClass(' list-group-item-action')
+            .addClass('list-group-item-action').click(() => updateCurrentStation(s)).append(deleteButton);
+
         document.getElementById('#favourites-stations').appendChild(newChild);
     });
 }
 
+function initStationsDOM() {
+    addStationsToDOM();
+    addFavouriteStationsToDOM();
+}
+
+function updateStationsDOM() {
+    const favouritesStationsDOM = document.getElementById('#favourites-stations');
+    $(favouritesStationsDOM).empty();
+
+    const savedStationsDOM = document.getElementById('#saved-stations');
+    $(savedStationsDOM).empty();
+
+    initStationsDOM();
+}
+
 function executeLoop() {
-    // fetchStations();
-    updateStationsDOM()
+    fetchStations();
+    initStationsDOM()
     initIsFavourite();
-    updateCurrentStation(currentStation);
+    updateCurrentStationDOM(currentStation);
 }
 
 executeLoop()
