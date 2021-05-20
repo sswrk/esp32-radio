@@ -285,7 +285,7 @@ function updateStationsDOM() {
 
 async function executeLoop() {
     await fetchStations();
-    setTimeout(() => checkStationState(), 1000);
+    setInterval(() => checkStationState(), 1000);
 }
 
 executeLoop()

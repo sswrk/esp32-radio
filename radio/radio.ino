@@ -33,6 +33,20 @@ void createServerHandlers() {
   server.on("/img/previous.svg", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send(SPIFFS, "/img/previous.svg", "image/svg+xml");
   });
+  server.on("/check-station", HTTP_GET, [](AsyncWebServerRequest * request) {
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
+    DynamicJsonDocument root(1024 * 100);
+    RadioStationInfo currentStation = availableStations.at(radioStation);
+    root["station"]["id"] = currentStation.id;
+    root["station"]["name"] = currentStation.name;
+    root["station"]["host"] = currentStation.host;
+    root["station"]["path"] = currentStation.path;
+    root["station"]["port"] = currentStation.port;
+    root["station"]["isFavourite"] = currentStation.isFavourite;
+    root["playing"] = !paused;
+    serializeJson(root, *response);
+    request->send(response);
+  });
   server.on("/stations", HTTP_GET, [](AsyncWebServerRequest * request) {
     AsyncResponseStream *response = request->beginResponseStream("application/json");
     DynamicJsonDocument root(1024 * 100);
