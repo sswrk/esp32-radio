@@ -1,32 +1,32 @@
 let favouritesStationsArr = [];
 let savedStationsArr = [
-    {
-        id: 1, isFavourite: false, name: 'hej',
-    },
-    {
-        id: 32, isFavourite: true, name: 'Andrzejska'
-    },
-    {
-        id: 31, isFavourite: false, name: 'Mother'
-    },
-    {
-        id: 30, isFavourite: true, name: 'Father'
-    },
-    {
-        id: 29, isFavourite: false, name: 'Sister'
-    },
-    {
-        id: 28, isFavourite: true, name: 'Pop'
-    },
-    {
-        id: 27, isFavourite: false, name: 'Lo-fi'
-    },
-    {
-        id: 26, isFavourite: true, name: 'Rock'
-    },
-    {
-        id: 25, isFavourite: true, name: 'Drum and Bass'
-    }
+    // {
+    //     id: 1, isFavourite: false, name: 'hej',
+    // },
+    // {
+    //     id: 32, isFavourite: true, name: 'Andrzejska'
+    // },
+    // {
+    //     id: 31, isFavourite: false, name: 'Mother'
+    // },
+    // {
+    //     id: 30, isFavourite: true, name: 'Father'
+    // },
+    // {
+    //     id: 29, isFavourite: false, name: 'Sister'
+    // },
+    // {
+    //     id: 28, isFavourite: true, name: 'Pop'
+    // },
+    // {
+    //     id: 27, isFavourite: false, name: 'Lo-fi'
+    // },
+    // {
+    //     id: 26, isFavourite: true, name: 'Rock'
+    // },
+    // {
+    //     id: 25, isFavourite: true, name: 'Drum and Bass'
+    // }
 ];
 let currentStation = savedStationsArr[0];
 let isPlaying = false;
@@ -129,7 +129,7 @@ async function selectPreviousStation() {
 
     xmlhttp.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
-            updateCurrentStation(nextStation)
+            updateCurrentStationDOM(nextStation)
         }
     }
 
@@ -159,7 +159,7 @@ function selectNextStation() {
 
     xmlhttp.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
-            updateCurrentStation(nextStation)
+            updateCurrentStationDOM(nextStation)
         }
     }
 
@@ -267,9 +267,7 @@ function updateStationsDOM() {
 }
 
 async function executeLoop() {
-    await fetchStations()
-    initStationsDOM()
-    updateCurrentStationDOM(currentStation);
+    await fetchStations();
 }
 
 executeLoop()
