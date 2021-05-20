@@ -71,7 +71,8 @@ async function updateCurrentStation(newStation) {
     }
 
     xmlhttp.open("POST", "/set-station", true);
-    xmlhttp.send('id=' + newStation.id)
+    const data = JSON.stringify({id: newStation.id})
+    xmlhttp.send(data)
 }
 
 async function updateCurrentStationDOM(newStation) {
@@ -91,7 +92,8 @@ async function deleteStation(station) {
     }
 
     xmlhttp.open("POST", "/stations", true);
-    xmlhttp.send('id=' + station.id)
+    const data = JSON.stringify({id: station.id})
+    xmlhttp.send(data)
 }
 
 
@@ -110,7 +112,8 @@ async function toggleStationIsFavourite() {
         }
     }
     xmlhttp.open(currentStation.isFavourite ? "DELETE" : "POST", "/favourites", true);
-    xmlhttp.send('id=' + currentStation.id);
+    const data = JSON.stringify({id: currentStation.id})
+    xmlhttp.send(data)
 
 }
 
@@ -126,7 +129,8 @@ async function selectPreviousStation() {
     const nextStation = savedStationsArr[nextStationIndex];
 
     xmlhttp.open("POST", "/set-station", true);
-    xmlhttp.send('id=' + nextStation.id)
+    const data = JSON.stringify({id:nextStation.id})
+    xmlhttp.send(data)
 }
 
 function togglePlayState() {
@@ -153,7 +157,8 @@ function selectNextStation() {
     if (nextStationIndex >= savedStationsArr.length) nextStationIndex = 0;
     const nextStation = savedStationsArr[nextStationIndex];
     xmlhttp.open("POST", "/set-station", true);
-    xmlhttp.send('id=' + nextStation.id)
+    const data = JSON.stringify({id: nextStation.id})
+    xmlhttp.send(data)
 }
 
 
