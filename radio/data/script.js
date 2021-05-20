@@ -50,7 +50,7 @@ async function initIsFavourite() {
     (currentStation.isFavourite) ? $('#add-favourite-heart').addClass('d-none') : $('#delete-favourite-heart').addClass('d-none');
 }
 
-async function checkIsFavourite(prevStation, newStation) {
+function checkIsFavourite(prevStation, newStation) {
     if (prevStation.isFavourite !== newStation.isFavourite) {
         if (prevStation.isFavourite) {
             $('#add-favourite-heart').removeClass('d-none');
@@ -244,7 +244,6 @@ function updateStationsDOM() {
 async function executeLoop() {
     await fetchStations().then(() => {
         initStationsDOM()
-        initIsFavourite();
         updateCurrentStationDOM(currentStation);
     });
 }
