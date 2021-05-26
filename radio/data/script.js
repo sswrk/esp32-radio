@@ -32,6 +32,38 @@ let currentStation = savedStationsArr[0];
 let isPlaying = false;
 let xmlhttp = new XMLHttpRequest();
 
+var gateway = `ws://${window.location.hostname}/update`;
+var websocket;
+function initWebSocket() {
+    console.log('Trying to open a WebSocket connection...');
+    websocket = new WebSocket(gateway);
+    websocket.onopen    = onOpen;
+    websocket.onclose   = onClose;
+    websocket.onmessage = onMessage;
+}
+
+function onOpen(event) {
+    console.log('Connection opened');
+}
+
+function onClose(event) {
+    console.log('Connection closed');
+    setTimeout(initWebSocket, 2000);
+}
+
+function onMessage(event) {
+    data = JSON.parse(event.data)
+    updateCurrentStationDOM(data.station);
+    isPlaying = data.playing;
+    checkIsPlaying();
+}
+
+window.addEventListener('load', onLoad);
+
+function onLoad(event) {
+    initWebSocket();
+}
+
 async function fetchStations() {
     xmlhttp.onreadystatechange = function () {
         if (this.readyState === 4 && this.status === 200) {
@@ -41,6 +73,7 @@ async function fetchStations() {
             initIsFavourite();
             initStationsDOM()
             updateCurrentStationDOM(currentStation);
+            checkStationState();
         }
     }
     xmlhttp.open("GET", "/stations", true);
@@ -78,6 +111,8 @@ async function updateCurrentStation(newStation) {
 }
 
 async function updateCurrentStationDOM(newStation) {
+    console.log(currentStation);
+    console.log(newStation);
     checkIsFavourite(currentStation, newStation)
     currentStation = newStation;
     $('#current-station').html(currentStation.name);
@@ -285,7 +320,7 @@ function updateStationsDOM() {
 
 async function executeLoop() {
     await fetchStations();
-    setInterval(() => checkStationState(), 1000);
+    // setInterval(() => checkStationState(), 1000);
 }
 
 executeLoop()

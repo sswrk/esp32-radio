@@ -34,6 +34,7 @@ void checkForStationChange() {
     connectToStation(radioStation);
     previousRadioStation = radioStation;
     writeLastStationToEEPROM(radioStation);
+    notifyClients();
   }
 }
 

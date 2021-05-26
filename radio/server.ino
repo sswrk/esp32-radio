@@ -1,6 +1,43 @@
 #include "src/radio.h"
 
 AsyncWebServer server(80);
+AsyncWebSocket webSocket("/update");
+
+void notifyClients(){
+  String output;
+  DynamicJsonDocument root(1024 * 100);
+  RadioStationInfo currentStation = availableStations.at(radioStation);
+  root["station"]["id"] = currentStation.id;
+  root["station"]["name"] = currentStation.name;
+  root["station"]["host"] = currentStation.host;
+  root["station"]["path"] = currentStation.path;
+  root["station"]["port"] = currentStation.port;
+  root["station"]["isFavourite"] = currentStation.isFavourite;
+  root["playing"] = !paused;
+  serializeJson(root, output);
+  webSocket.textAll(output);
+}
+
+void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
+ void *arg, uint8_t *data, size_t len) {
+  switch (type) {
+    case WS_EVT_CONNECT:
+      Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
+      break;
+    case WS_EVT_DISCONNECT:
+      Serial.printf("WebSocket client #%u disconnected\n", client->id());
+      break;
+    case WS_EVT_DATA:
+    case WS_EVT_PONG:
+    case WS_EVT_ERROR:
+      break;
+  }
+}
+
+void initWebSocket() {
+  webSocket.onEvent(onEvent);
+  server.addHandler(&webSocket);
+}
 
 void notFound(AsyncWebServerRequest *request) {
   request->send(404, "application/json", "{\"message\":\"Not found\"}");
@@ -150,5 +187,6 @@ void createServerHandlers() {
 void initServer() {
   createServerHandlers();
   server.begin();
+  initWebSocket();
   Serial.println("Server started!");
 }
