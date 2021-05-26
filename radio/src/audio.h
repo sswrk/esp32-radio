@@ -20,7 +20,7 @@ extern uint8_t rsetVS;
 /*----------------------------------
           VS1003 SETTINGS
 ----------------------------------*/
-extern uint8_t buff[32];
+extern uint8_t buff[320];
 extern VS1003 player;
 
 #endif

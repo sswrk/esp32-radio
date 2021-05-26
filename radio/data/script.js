@@ -71,7 +71,7 @@ async function fetchStations() {
             currentStation = savedStationsArr[0];
             favouritesStationsArr = savedStationsArr.filter(s => s.isFavourite);
             initIsFavourite();
-            initStationsDOM()
+            updateStationsDOM();
             updateCurrentStationDOM(currentStation);
             checkStationState();
         }
@@ -89,7 +89,7 @@ function checkIsFavourite(prevStation, newStation) {
     if (prevStation.isFavourite !== newStation.isFavourite) {
         if (prevStation.isFavourite) {
             $('#add-favourite-heart').removeClass('d-none');
-            $('#delete-favourite-heart').addClass('d-none')
+            $('#delete-favourite-heart').addClass('d-none');
         } else {
             $('#add-favourite-heart').addClass('d-none');
             $('#delete-favourite-heart').removeClass('d-none')
@@ -111,8 +111,6 @@ async function updateCurrentStation(newStation) {
 }
 
 async function updateCurrentStationDOM(newStation) {
-    console.log(currentStation);
-    console.log(newStation);
     checkIsFavourite(currentStation, newStation)
     currentStation = newStation;
     $('#current-station').html(currentStation.name);
@@ -148,7 +146,8 @@ async function toggleStationIsFavourite() {
                 $('#add-favourite-heart').removeClass('d-none');
                 $('#delete-favourite-heart').addClass('d-none');
             }
-            updateStationsDOM();
+            console.log("before update");
+            fetchStations();
         }
     }
     xmlhttp.open(currentStation.isFavourite ? "DELETE" : "POST", "/favourites", true);
@@ -284,6 +283,8 @@ function addStationsToDOM() {
 
 function addFavouriteStationsToDOM() {
     favouritesStationsArr = savedStationsArr.filter(s => s.isFavourite);
+    console.log(currentStation);
+    console.log(savedStationsArr);
 
     favouritesStationsArr.forEach((s) => {
         const newDiv = document.createElement('div')
@@ -315,6 +316,7 @@ function updateStationsDOM() {
     const savedStationsDOM = document.getElementById('#saved-stations');
     $(savedStationsDOM).empty();
 
+    console.log("emptied");
     initStationsDOM();
 }
 

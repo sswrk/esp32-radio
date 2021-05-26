@@ -15,5 +15,5 @@ extern uint8_t rsetVS = 3; //EN
 /*----------------------------------
           VS1003 SETTINGS
 ----------------------------------*/
-uint8_t buff[32];
+uint8_t buff[320];
 extern VS1003 player(csVS, dcsVS, dreqVS, rsetVS);
