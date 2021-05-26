@@ -142,10 +142,11 @@ bool setStation(int id) {
 void toggleVolume() {
   if(paused==true) {
     player.setVolume(volume);
+    paused = false;
     Serial.println("Playing");
   }
   else {
-    player.setVolume(0);
+    player.setVolume(200);
     paused = true;
     Serial.println("Muted");
   }
