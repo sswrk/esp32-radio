@@ -287,3 +287,41 @@ void readStationsFromFile() {
   }
   updateNextId();
 }
+
+void initSPIFFS(){
+  if (!SPIFFS.begin(true)) {
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    return;
+  }
+  NVS.begin();
+  readStationsFromFile();
+}
+
+void initAudio(){
+  SPI.begin();
+  //SPI.begin(sckVS, misoVS, mosiVS);
+  Serial.println("SPI set up");
+  player.begin();
+  uint8_t vol = getVolumeFromEEPROM();
+  if (vol >= 0 && vol <= 200) {
+    volume = vol;
+  }
+  player.setVolume(volume);
+  Serial.println("VS1003 set up");
+}
+
+void checkForVolumeChange() {
+  if (volume != previousVolume) {
+    player.setVolume(volume);
+    previousVolume = volume;
+    writeVolumeToEEPROM(volume);
+  }
+}
+
+void setInitRadioStation(){
+  radioStation = getLastStationFromEEPROM();
+  if (radioStation < 0 || radioStation >= availableStations.size()) {
+    radioStation = 0;
+  }
+  previousRadioStation = radioStation;
+}

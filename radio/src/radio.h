@@ -61,4 +61,8 @@ void deleteStationFromFile(int id);
 void addStationToFavouritesToFile(RadioStationInfo station);
 void removeStationFromFavouritesFromFile(RadioStationInfo station);
 void readStationsFromFile();
+void initSPIFFS();
+void initAudio();
+void checkForVolumeChange();
+void setInitRadioStation();
 #endif
