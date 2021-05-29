@@ -47,3 +47,5 @@ It can be powered by USB connected to ESP32 or from other 5V source.
 | Volume Down | D2 |
 | Add or remove favourite | D34 |
 | Switch favourites mode | D22 |
+
+![Diagram](https://user-images.githubusercontent.com/58403334/120080244-39baf000-c0b8-11eb-92bc-a52461ce3d02.png)
