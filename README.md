@@ -2,6 +2,18 @@
 
 This is a web radio player made for ESP32 board with VS1003 audio module. It can be controlled with buttons and user panel hosted on ESP32 web server.
 
+# Features
+
+1. Adding radio stations
+2. Removing radio stations
+3. Adding to favourites
+4. Removing from favourites
+5. Changing the stations (all or favourites)
+6. Changing the volume
+7. Listening to the radio (connecting headphones or speakers to VS1003)
+8. Pausing/playing the current station
+9. Switching between all and favourites mode
+
 # Hardware
 
 1. ESP32-DevKitC
