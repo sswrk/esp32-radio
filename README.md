@@ -61,3 +61,24 @@ It can be powered by USB connected to ESP32 or from other 5V source.
 | Switch favourites mode | D22 |
 
 ![Diagram](https://user-images.githubusercontent.com/58403334/120080244-39baf000-c0b8-11eb-92bc-a52461ce3d02.png)
+
+# How to run
+
+## Tools
+
+Arduino IDE with ESP32 board set, [Arduino ESP32 filesystem uploader](https://github.com/me-no-dev/arduino-esp32fs-plugin), libraries which can be found in Library Manager or on GitHub:
+
+1. ESPAsyncWebServer 
+2. ArduinoJson 
+3. ESPVS1003 
+4. HTTPClient 
+5. ArduinoNvs 
+6. Vector 
+
+## Setting up
+
+Open connections.h file and enter your WiFi credentials.
+
+## Launching
+
+Load the code to your ESP32 using Arduino IDE and upload the server files to board's flash memory using the plugin. The server's IP number is printed to the serial port on startup.
